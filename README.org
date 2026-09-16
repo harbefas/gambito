@@ -1,0 +1,98 @@
+#+title: Gambito
+
+Cliente de xadrez keyboard-first para Linux: daemon e CLI em Rust, janelas independentes em Quickshell/QML. Sem dependência de Omarchy.
+
+* MVP
+- Partidas locais para duas pessoas, com validação SAN/UCI, roque, en passant e promoção.
+- Uma conexão por partida do Lichess, compartilhada entre janelas e CLI.
+- Lista de partidas em andamento, busca com ritmo e casual/rated, IA do Lichess, desistência e empate.
+- Relógios baseados nos valores do servidor; reconexão e recuperação do histórico pelo stream.
+- Partidas locais persistidas; exportação PGN; eventos JSON para scripts.
+- Socket Unix privado e token em arquivo 0600.
+
+* Executar
+Dependências: Rust 1.95+, Quickshell 0.3, Qt Quick Controls e fonte DejaVu Sans.
+
+#+begin_src sh
+cargo build --release
+./target/release/gambito local
+./target/release/gambito open
+#+end_src
+
+=local= e =open= iniciam o daemon automaticamente se necessário. =gambito daemon= executa em primeiro plano. Fechar janelas não encerra o daemon.
+
+* Lichess
+Crie um token pessoal em https://lichess.org/account/oauth/token/create com =board:play= e =challenge:write= (este último permite desafiar a IA). No terminal:
+
+#+begin_src sh
+gambito auth
+#+end_src
+
+Cole o token e finalize com Ctrl-D. O token é lido de stdin, validado e salvo em =$XDG_CONFIG_HOME/gambito/token= (padrão =~/.config/gambito/token=). Não coloque o token na linha de comando. Para uma entrada sem eco, use uma ferramenta de senhas que envie o token por pipe.
+
+#+begin_src sh
+gambito seek 10 5             # casual por padrão
+gambito seek 15 10 --rated
+gambito cancel
+gambito ai 1
+gambito list
+gambito open ABCDef12
+gambito move ABCDef12 Nf3
+gambito export ABCDef12 > partida.pgn
+gambito watch                # NDJSON contínuo
+gambito --json list
+#+end_src
+
+Ao parear, a partida aparece na lista. Abra-a com =g=, =j/k= e Enter. =gambito open ID= abre outra janela. Duas janelas da mesma partida recebem os mesmos lances; foco, orientação e seleção permanecem locais a cada janela.
+
+* Teclado
+| Tecla | Ação |
+|-------+------|
+| hjkl / setas | Mover o cursor pelo tabuleiro ou lista |
+| Enter / Espaço | Selecionar origem e destino |
+| i | Digitar SAN ou UCI, depois Enter |
+| : | Linha de comandos |
+| Esc | Cancelar seleção/entrada/confirmação e voltar à navegação |
+| n | Nova partida local |
+| g | Lista de partidas |
+| w | Outra janela da partida atual |
+| f | Inverter tabuleiro |
+| ? | Ajuda |
+| q | Fechar apenas esta janela |
+
+Comandos da janela: =:local=, =:open ID=, =:seek 10 5 casual=, =:cancel=, =:ai 1=, =:resign=, =:draw=, =:confirm=, =:games=, =:window=, =:flip=, =:help= e =:quit=.
+
+Lances usam notação inglesa: =Nf3=, =O-O=, =e2e4=. Ao promover pelo tabuleiro, a entrada pede =q/r/b/n=, sem escolher dama silenciosamente.
+
+* Protocolo
+Socket padrão: =$XDG_RUNTIME_DIR/gambito/socket=. Cada linha contém um objeto JSON UTF-8. Ao conectar, o cliente recebe =type: state= com todas as partidas. Mudanças geram novos snapshots. Comandos recebem =type: reply= com o =request_id= original, =ok= e =data= ou =error=. Eventos operacionais usam =type: notice=.
+
+#+begin_src json
+{"cmd":"move","game":"ABCDef12","notation":"e4","request_id":"42"}
+#+end_src
+
+=GAMBITO_SOCKET= permite outro socket (o diretório precisa ser 0700). =GAMBITO_UI= escolhe a pasta QML. =GAMBITO_API_URL= aceita somente loopback para testes de integração. O daemon não executa shell a partir do protocolo.
+
+* Instalação de usuário
+O arquivo =packaging/gambito.service= pode ser instalado em =~/.config/systemd/user/=, com o executável em =~/.local/bin/gambito= e a pasta =ui= em =~/.local/share/gambito/ui=. Inicie com =systemctl --user enable --now gambito.service=.
+
+* Validação
+#+begin_src sh
+cargo test
+cargo build
+python3 tests/integration.py
+python3 tests/ui.py
+#+end_src
+
+Os testes de integração usam o binário real, dois clientes Unix e um servidor HTTP simulado. Não enviam desafios nem lances para contas reais.
+
+* Limites deste corte
+- Xadrez padrão; sem variantes, premove, chat, estudos, puzzles ou análise Stockfish local ainda.
+- Partida local é humana contra humana e sem relógio; a IA disponível é a do Lichess.
+- Empate local pode ser acordado por =:draw=; não há interface específica para reivindicar tripla repetição/50 lances.
+- Estado online é confirmado pelo servidor; não há replay automático de lances após timeout.
+- Sem editor de atalhos/temas neste corte. A interface fica isolada do shell principal.
+- A integração remota é testada com servidor simulado; uma partida real requer autenticação do usuário.
+
+* Licença
+GPL-3.0-or-later, compatível com a biblioteca de regras shakmaty. Peças são glifos da fonte do sistema; não há imagens copiadas do Lichess.
