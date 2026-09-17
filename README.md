@@ -7,6 +7,8 @@ Rust daemon · Quickshell UI · Stockfish analysis
 
 [Install](docs/install.md) · [Guide](docs/guide.md) · [Keyboard](docs/keyboard.md) · [CLI & protocol](docs/cli.md) · [Development](docs/development.md)
 
+![Playing, analysing with Stockfish, a second tiled window and zen mode, all from the keyboard](docs/screenshots/demo.gif)
+
 ![Gambito analysing a Ruy Lopez with Stockfish](docs/screenshots/board.png)
 
 </div>
