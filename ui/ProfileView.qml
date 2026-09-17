@@ -125,9 +125,11 @@ ColumnLayout {
         Layout.fillWidth: true; spacing: 14
         ActionButton { objectName: "profileBack"; theme: app; compact: true; icon: "←"; label: "Lobby"; hint: "g"; onClicked: app.view = "" }
         Column {
-            Layout.fillWidth: true; spacing: 2
-            Text { text: app.account ? app.account.username : "Local profile"; color: app.fg; font { pixelSize: 20; weight: Font.DemiBold } }
+            // Elides instead of pushing the buttons and totals out of the window.
+            Layout.fillWidth: true; Layout.minimumWidth: 80; Layout.preferredWidth: 0; spacing: 2
+            Text { width: parent.width; elide: Text.ElideRight; text: app.account ? app.account.username : "Local profile"; color: app.fg; font { pixelSize: 20; weight: Font.DemiBold } }
             Text {
+                width: parent.width; elide: Text.ElideRight
                 text: !app.account ? "Connect Lichess for ratings, history and activity." : !profile.info ? "Loading…"
                     : "Member since " + profile.date(profile.info.account.createdAt) + " · " + profile.duration(profile.info.account.playTime.total) + " played"
                 color: app.muted; font.pixelSize: 12
@@ -136,7 +138,8 @@ ColumnLayout {
         ActionButton { objectName: "challengesButton"; theme: app; label: "Challenges" + (app.challenges.length ? " (" + app.challenges.length + ")" : ""); hint: "C"; onClicked: app.runCommand(":challenges") }
         ActionButton { objectName: "profileSignOut"; visible: !!app.account; theme: app; compact: true; label: "Sign out"; hint: "l"; onClicked: app.runCommand(":logout") }
         Row {
-            visible: !!profile.info; spacing: 18
+            // Lifetime totals are extra: narrow panes keep the header to identity and actions.
+            visible: !!profile.info && profile.width >= 900; spacing: 18
             Repeater {
                 model: profile.info ? [["Games", profile.info.account.count.all], ["Wins", profile.info.account.count.win], ["Draws", profile.info.account.count.draw], ["Losses", profile.info.account.count.loss]] : []
                 Column {

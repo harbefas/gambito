@@ -88,7 +88,7 @@ Rectangle {
             visible: segmented.hint !== ""
             anchors { right: parent.right; rightMargin: 6; verticalCenter: parent.verticalCenter }
             width: hintText.implicitWidth + 10; height: 18; radius: 4; color: segmented.theme.bg; border.width: 1; border.color: segmented.theme.line
-            Text { id: hintText; anchors.centerIn: parent; text: segmented.hint; color: segmented.theme.muted; font { family: segmented.theme.mono; pixelSize: 10 } }
+            Text { id: hintText; anchors.centerIn: parent; text: segmented.hint; color: segmented.theme.muted; font { pixelSize: 10; weight: Font.Medium } }
         }
         Row {
             id: segmentRow

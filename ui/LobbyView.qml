@@ -129,7 +129,7 @@ Flickable {
                         visible: tile.modelData.hint !== "" && !(lobby.iconTiles && tile.modelData.hint.length > 1)
                         anchors { right: parent.right; rightMargin: lobby.iconTiles ? 6 : lobby.compactTiles ? 8 : 14; verticalCenter: parent.verticalCenter }
                         width: tileHint.implicitWidth + 12; height: 20; radius: 5; color: app.bg; border.width: 1; border.color: app.line
-                        Text { id: tileHint; anchors.centerIn: parent; text: tile.modelData.hint; color: app.muted; font { family: app.mono; pixelSize: 11 } }
+                        Text { id: tileHint; anchors.centerIn: parent; text: tile.modelData.hint; color: app.muted; font { pixelSize: 11; weight: Font.Medium } }
                     }
                     Column {
                         visible: !lobby.iconTiles

@@ -43,7 +43,8 @@ Rectangle {
         width: Math.max(20, hintText.implicitWidth + 10); height: 20; radius: 5
         color: button.filled ? button.theme.alpha(button.theme.bg, 0.15) : button.theme.bg
         border.width: button.filled ? 0 : 1; border.color: button.theme.line
-        Text { id: hintText; anchors.centerIn: parent; text: button.hint; color: button.filled ? button.ink : button.theme.muted; font { family: button.theme.mono; pixelSize: 11 } }
+        // Key hints use the sans UI font: in many monospace fonts l and 1 look alike at this size.
+        Text { id: hintText; anchors.centerIn: parent; text: button.hint; color: button.filled ? button.ink : button.theme.muted; font { pixelSize: 11; weight: Font.Medium } }
     }
     MouseArea { id: mouse; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: button.clicked() }
 }
