@@ -31,6 +31,8 @@ cargo build --release
 install -Dm755 target/release/gambito ~/.local/bin/gambito
 install -Dm644 -t ~/.local/share/gambito/ui ui/*.qml
 install -Dm644 packaging/gambito.service ~/.config/systemd/user/gambito.service
+install -Dm644 packaging/gambito.desktop ~/.local/share/applications/gambito.desktop
+install -Dm644 packaging/gambito.svg ~/.local/share/icons/hicolor/scalable/apps/gambito.svg
 systemctl --user daemon-reload
 systemctl --user enable --now gambito.service
 ```
@@ -40,21 +42,31 @@ After updating:
 - **Binary:** restart the service with `systemctl --user restart gambito`.
 - **UI:** copy `ui/*.qml` again, and delete any files that were removed from `ui/`. Quickshell loads the QML when it starts, so close every Gambito window before reopening.
 
-## Open it from a keybinding
+## Open it
 
-Hyprland (Lua config):
+The desktop entry puts Gambito in any app launcher: the Omarchy menu, Walker, fuzzel, rofi or your Quickshell launcher.
+
+Each `gambito open` adds a window to the running Gambito process, which costs a few MB rather than a new Quickshell instance. Windows are titled `Gambito`, so launch-or-focus scripts and window rules can match on the title.
+
+**Omarchy.** Add a binding to `~/.config/hypr/bindings.lua`. `SUPER + ALT + C` is free in Omarchy's defaults, and this focuses Gambito when it is already open:
 
 ```lua
-hl.bind("SUPER + G", hl.dsp.exec_cmd(os.getenv("HOME") .. "/.local/bin/gambito open"))
+o.bind("SUPER + ALT + C", "Gambito", "omarchy-launch-or-focus Gambito 'gambito open'")
 ```
 
-Hyprland (`hyprland.conf`):
+**Hyprland**, Lua config:
+
+```lua
+hl.bind("SUPER + ALT + C", hl.dsp.exec_cmd("gambito open"))
+```
+
+**Hyprland**, `hyprland.conf`:
 
 ```ini
-bind = SUPER, G, exec, ~/.local/bin/gambito open
+bind = SUPER ALT, C, exec, gambito open
 ```
 
-Every call to `gambito open` adds a window to the running Gambito process. That's cheap: a new window costs a few MB, not a new Quickshell instance.
+On other compositors, bind `gambito open` the same way.
 
 ## Sign in to Lichess
 
@@ -72,7 +84,30 @@ Accounts connected before a scope was added (for example `challenge:read`) must 
 
 ## Theme
 
-The UI reads the current mode from `~/.local/state/desktop/theme` and colors from `~/.config/desktop/theme-<mode>.toml`, and follows changes live. Without these files it uses its built-in dark palette.
+Gambito uses [Omarchy's `colors.toml` format](https://github.com/omacom/omarchy/blob/quattro/docs/theming.md#colorstoml) and follows theme changes live, without a restart. It uses the first palette it finds:
+
+1. `~/.config/gambito/colors.toml`, your own palette
+2. Omarchy 4's current theme, `~/.local/state/omarchy/current/theme/colors.toml`
+3. Omarchy 3's current theme, `~/.config/omarchy/current/theme/colors.toml`
+4. `~/.config/desktop/theme-<mode>.toml`, with the mode read from `~/.local/state/desktop/theme`
+5. The built-in dark palette
+
+On Omarchy there's nothing to set up: `omarchy-theme-set` recolors open Gambito windows.
+
+On any other setup, write `~/.config/gambito/colors.toml`, by hand or from the template of whatever tool generates your colors (matugen, pywal, wallust, your shell's own theme script). Gambito reads these keys; any missing one falls back to the built-in palette:
+
+```toml
+background = "#1a1b26"   # window
+foreground = "#a9b1d6"   # text; panels and borders are mixed from these two
+accent     = "#7aa2f7"   # focus rings, keyboard cursor, popularity bars
+muted      = "#414868"   # dark squares are mixed from muted and green
+red        = "#f7768e"   # errors, resign, blunders
+green      = "#9ece6a"   # dark squares, good moves, wins
+yellow     = "#e0af68"   # last-move highlight
+bright_green = "#9ece6a" # selected square
+```
+
+Colors may be written with or without `#`. Text in monospace (clocks, hints, the command line) uses fontconfig's `monospace` family, the font `omarchy-font-set` changes; set `font = "Family Name"` in the palette to pick another.
 
 ## Stockfish
 

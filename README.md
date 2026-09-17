@@ -17,7 +17,8 @@ Gambito brings Lichess to your desktop the way the rest of your setup already wo
 
 - **Keyboard first, mouse optional.** `hjkl` or SAN/UCI to move, `:` for a command line, `?` for every key. Every button shows its key.
 - **Made for tiling.** The lobby reflows from a full screen down to a narrow column; zen mode (`z`) shows just the board.
-- **Quickshell native.** One Quickshell process hosts all windows; the lobby uses about 50 MB, and light/dark themes switch live.
+- **Quickshell native.** One Quickshell process hosts all windows, and the lobby uses about 50 MB. It sits in your launcher like any app.
+- **Your theme, live.** Follows the current Omarchy theme out of the box. Any other Quickshell setup drives it with one `colors.toml` in the same format, from matugen, pywal or your own script.
 - **A daemon like `emacs --daemon`.** `gambito open` attaches a window; closing it keeps your games, clocks and streams running. Open the same game in two windows, or drive it from the CLI.
 - **Real analysis.** Local Stockfish up to depth 245 with live updates and a best-move arrow, Lichess server analysis with `?!` `?` `??` marks, opening explorer, and analysis boards with saved variations.
 - **Fair play built in.** Engine, explorer and analysis are blocked by the daemon in your own live games.
@@ -54,7 +55,7 @@ cargo build --release
 ./target/release/gambito open
 ```
 
-`gambito open` starts the daemon when needed and opens the lobby. Press **Connect Lichess** (`l`) to sign in through your browser; local games, TV, puzzles and news work without an account. To install it for your user with a systemd service and a Hyprland keybinding, see [Install](docs/install.md).
+`gambito open` starts the daemon when needed and opens the lobby. Press **Connect Lichess** (`l`) to sign in through your browser; local games, TV, puzzles and news work without an account. To install it for your user (systemd service, launcher entry, Omarchy or Hyprland keybinding, theme), see [Install](docs/install.md).
 
 ## Keys you'll use first
 

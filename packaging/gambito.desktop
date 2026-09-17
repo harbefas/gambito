@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+Name=Gambito
+GenericName=Chess Client
+Comment=Keyboard-first Lichess client with Stockfish analysis
+Exec=gambito open
+Icon=gambito
+Terminal=false
+Categories=Game;BoardGame;
+Keywords=chess;lichess;stockfish;puzzles;

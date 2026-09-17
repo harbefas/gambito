@@ -142,15 +142,21 @@ Scope {
         {title: "commands", rows: [[":challenges", "send and respond to invitations"], [":challenge USER [MIN INC rated]", "challenge a player"], [":accept / :decline / :cancelchallenge ID", "respond to an invitation"], [":chat [MESSAGE]", "toggle chat or send message"], [":takeback [no]", "request / accept / decline takeback"], [":analyse", "branch from viewed position"], [":fen FEN", "analyse a FEN position"], [":source", "return to source game"], [":lichess", "load Lichess analysis"], [":explorer", "opening explorer on / off"], [":puzzle", "daily puzzle on the board"], [":hint", "puzzle hint"], [":retry", "restart puzzle"], [":solution", "show puzzle solution"], [":delete", "delete analysis board"], [":depth N", "set analysis depth (1–245)"], [":local", "new local game"], [":open ID", "open Lichess game"], [":seek 10 5 [rated]", "seek opponent"], [":cancel", "cancel seek"], [":ai 1-8", "play Lichess AI"], [":play", "online play options"], [":login", "connect Lichess"], [":logout", "sign out of Lichess"], [":resign", "resign"], [":draw", "offer or accept draw"], [":confirm", "confirm action"], [":games", "lobby"], [":profile", "profile: ratings, history, boards"], [":tv", "Lichess TV"], [":zen", "board only (z on the board)"], [":openings", "opening explorer page"], [":puzzles", "puzzle themes"], [":next", "next puzzle of this theme"], [":window", "new window"], [":quit", "close"]]},
         {title: "moves", rows: [["e4  Nf3  O-O", "SAN"], ["e2e4", "UCI"], ["e7e8q", "promotion"]]}
     ]
-    // Desktop palette: ~/.config/desktop/theme-<mode>.toml, mode from ~/.local/state/desktop/theme.
-    // Falls back to the built-in palette when those files don't exist.
+    // Palette, first found wins, all followed live. Every source uses Omarchy's colors.toml keys
+    // (background, foreground, accent, muted, red, green, ...), so any setup can write one:
+    // 1. $XDG_CONFIG_HOME/gambito/colors.toml  2. Omarchy 4's current theme  3. Omarchy 3's current theme
+    // 4. ~/.config/desktop/theme-<mode>.toml, mode from ~/.local/state/desktop/theme  5. built-in palette.
+    readonly property string configHome: Quickshell.env("XDG_CONFIG_HOME") || Quickshell.env("HOME") + "/.config"
+    readonly property string stateHome: Quickshell.env("XDG_STATE_HOME") || Quickshell.env("HOME") + "/.local/state"
     property string themeMode: "dark"
-    property var theme: ({})
+    property var themeSources: [({}), ({}), ({}), ({})]
+    readonly property var theme: themeSources.find(t => !!t.background) || ({})
+    function setThemeSource(i, text) { const next = themeSources.slice(); next[i] = text ? parseToml(text) : ({}); themeSources = next; }
     readonly property bool themed: !!theme.background
     readonly property color bg: tc("background", "#121719")
     readonly property color fg: tc("foreground", "#e6e3db")
     readonly property color accent: tc("accent", "#c5dc9c")
-    readonly property color danger: tc("error", "#df8f83")
+    readonly property color danger: tc(["error", "red"], "#df8f83")
     readonly property color panel: mix(bg, fg, 0.05)
     readonly property color raised: mix(bg, fg, 0.09)
     readonly property color line: mix(bg, fg, 0.15)
@@ -158,13 +164,17 @@ Scope {
     readonly property color faint: mix(fg, bg, 0.62)
     readonly property string mono: theme.font || "monospace"
     readonly property color squareLight: themed ? mix(tc("bright_white", "#f4f1e8"), tc("bright_yellow", "#d8b878"), 0.22) : "#ddd6c3"
-    readonly property color squareDark: themed ? mix(tc("green", "#8f9f52"), tc("bright_black", "#4f5b4a"), 0.5) : "#778a80"
+    readonly property color squareDark: themed ? mix(tc("green", "#8f9f52"), tc(["bright_black", "muted"], "#4f5b4a"), 0.5) : "#778a80"
     readonly property color highlight: tc("yellow", "#c9c46a")
-    readonly property color selection: tc("bright_green", "#b0bd68")
+    readonly property color selection: tc(["bright_green", "green"], "#b0bd68")
     // Score coloring (leading / trailing), from the terminal theme like the rest of the palette.
     readonly property color winColor: tc("green", "#629924")
 
-    function tc(key, fallback) { return Qt.color(theme[key] ? "#" + theme[key] : fallback); }
+    // Keys may list alternatives; values may be written with or without "#".
+    function tc(keys, fallback) {
+        const value = [].concat(keys).map(k => theme[k]).find(v => !!v);
+        return Qt.color(value ? (value.startsWith("#") ? value : "#" + value) : fallback);
+    }
     function mix(a, b, t) { return Qt.tint(a, Qt.rgba(b.r, b.g, b.b, t)); }
     function alpha(c, a) { return Qt.rgba(c.r, c.g, c.b, a); }
     function parseToml(text) {
@@ -526,18 +536,33 @@ Scope {
     Timer { id: missingGame; interval: 10000; onTriggered: if (root.selectedId && !root.game) { root.selectedId = ""; root.tell("Game not available.", true); } }
     Timer { id: explorerTimer; interval: 150; onTriggered: if (root.explorerKey) root.send("explorer", {ply: root.shownPly(), db: root.explorerDb}) }
     Timer { id: evalTimer; interval: 120; onTriggered: if (root.evalKey) root.send("eval", {ply: root.shownPly(), stream: true, depth: root.engineDepth}) }
+    Instantiator {
+        model: [root.configHome + "/gambito/colors.toml", root.stateHome + "/omarchy/current/theme/colors.toml",
+                root.configHome + "/omarchy/current/theme/colors.toml", root.configHome + "/desktop/theme-" + root.themeMode + ".toml"]
+        delegate: FileView {
+            id: source
+            required property string modelData
+            required property int index
+            path: modelData
+            watchChanges: true; printErrors: false
+            onFileChanged: reload()
+            onLoaded: root.setThemeSource(index, text())
+            onLoadFailed: root.setThemeSource(index, "")
+            // omarchy-theme-set swaps the whole theme directory, which a file watch can miss; theme.name is rewritten after it.
+            readonly property Connections omarchySwitch: Connections { target: omarchyName; function onLoaded() { source.reload(); } }
+        }
+    }
     FileView {
-        path: (Quickshell.env("XDG_STATE_HOME") || Quickshell.env("HOME") + "/.local/state") + "/desktop/theme"
+        id: omarchyName
+        path: root.stateHome + "/omarchy/current/theme.name"
+        watchChanges: true; printErrors: false
+        onFileChanged: reload()
+    }
+    FileView {
+        path: root.stateHome + "/desktop/theme"
         watchChanges: true; printErrors: false
         onFileChanged: reload()
         onLoaded: root.themeMode = text().trim() || "dark"
-    }
-    FileView {
-        path: (Quickshell.env("XDG_CONFIG_HOME") || Quickshell.env("HOME") + "/.config") + "/desktop/theme-" + root.themeMode + ".toml"
-        watchChanges: true; printErrors: false
-        onFileChanged: reload()
-        onLoaded: root.theme = root.parseToml(text())
-        onLoadFailed: root.theme = ({})
     }
 
     FloatingWindow {
