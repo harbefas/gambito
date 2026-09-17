@@ -127,6 +127,8 @@ ColumnLayout {
     RowLayout {
         id: content
         Layout.fillWidth: true; Layout.fillHeight: true; spacing: 12
+        // Height comes from the window only: boardSize reads it, so child heights must not feed back.
+        Layout.preferredHeight: 0
         // Boards take the width left by the narrow side column (two cards with 24 px padding and
         // row spacing), limited by the height the taller puzzle card needs around its board.
         readonly property real sideWidth: Math.max(240, Math.min(320, width * 0.26))
