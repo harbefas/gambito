@@ -10,6 +10,8 @@ ColumnLayout {
     required property var app
     required property Item focusScope
     anchors.fill: parent; spacing: 12
+    // In a narrow pane the current position stacks instead of overflowing.
+    readonly property bool narrow: width < 560
 
     // The line walked so far, one step per move: {uci, san, name}.
     property var line: []
@@ -124,9 +126,10 @@ ColumnLayout {
         objectName: "openingsCurrent"
         Layout.fillWidth: true; implicitHeight: currentRow.implicitHeight + 24; radius: 12
         color: app.panel; border.width: 1; border.color: app.line
-        RowLayout {
+        GridLayout {
             id: currentRow
-            anchors { left: parent.left; right: parent.right; top: parent.top; margins: 12 } spacing: 16
+            anchors { left: parent.left; right: parent.right; top: parent.top; margins: 12 }
+            columns: openings.narrow ? 1 : 2; columnSpacing: 16; rowSpacing: 10
             MiniBoard {
                 Layout.preferredWidth: 150; Layout.preferredHeight: 150
                 app: openings.app; fen: openings.result ? openings.result.fen : "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
@@ -142,8 +145,8 @@ ColumnLayout {
                     color: openings.error && !openings.book ? app.danger : app.muted; font.pixelSize: 12
                 }
                 ResultBar { Layout.fillWidth: true; Layout.preferredHeight: 18; visible: openings.total > 0; stats: openings.book; theme: app }
-                RowLayout {
-                    spacing: 6
+                Flow {
+                    Layout.fillWidth: true; spacing: 6
                     ActionButton { objectName: "openingsUndo"; theme: app; compact: true; icon: "‹"; label: "Back"; hint: "u"; enabled: openings.line.length > 0; opacity: enabled ? 1 : 0.4; onClicked: openings.back() }
                     ActionButton { theme: app; compact: true; label: "Start"; hint: "b"; enabled: openings.line.length > 0; opacity: enabled ? 1 : 0.4; onClicked: openings.toStart() }
                     ActionButton { objectName: "openingsAnalyse"; theme: app; compact: true; icon: "⤢"; label: "Analyse"; hint: "a"; onClicked: openings.analyse() }

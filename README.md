@@ -16,7 +16,7 @@ Gambito brings Lichess to your desktop the way the rest of your setup already wo
 ## Why Gambito
 
 - **Keyboard first, mouse optional.** `hjkl` or SAN/UCI to move, `:` for a command line, `?` for every key. Every button shows its key.
-- **Made for tiling.** The lobby reflows from a full screen down to a narrow column; zen mode (`z`) shows just the board.
+- **Made for tiling.** Every page reflows from a full screen down to a narrow column, and scrolls instead of clipping; zen mode (`z`) shows just the board.
 - **Quickshell native.** One Quickshell process hosts all windows, and the lobby uses about 50 MB. It sits in your launcher like any app.
 - **Your theme, live.** Follows the current Omarchy theme out of the box. Any other Quickshell setup drives it with one `colors.toml` in the same format, from matugen, pywal or your own script.
 - **A daemon like `emacs --daemon`.** `gambito open` attaches a window; closing it keeps your games, clocks and streams running. Open the same game in two windows, or drive it from the CLI.

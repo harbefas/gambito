@@ -113,7 +113,8 @@ Rectangle {
         id: header
         anchors { left: parent.left; right: parent.right; top: parent.top }
         spacing: 12
-        Text { text: "Play online"; color: screen.app.fg; font { pixelSize: 18; weight: Font.DemiBold } }
+        // The title gives way first: the mode switch and Close must stay reachable in narrow panes.
+        Text { Layout.fillWidth: true; Layout.preferredWidth: 0; elide: Text.ElideRight; text: "Play online"; color: screen.app.fg; font { pixelSize: 18; weight: Font.DemiBold } }
         Segmented {
             objectName: "modeSwitch"
             hint: "m"
@@ -121,7 +122,6 @@ Rectangle {
             options: [["opponent", "Opponent"], ["computer", "Computer"]]
             onPicked: v => screen.mode = v
         }
-        Item { Layout.fillWidth: true }
         ActionButton { objectName: "closePlayButton"; theme: screen.app; compact: true; label: "Close"; hint: "esc"; onClicked: screen.app.playVisible = false }
     }
 
@@ -161,7 +161,7 @@ Rectangle {
             GridLayout {
                 id: grid
                 Layout.fillWidth: true
-                columns: width >= 700 ? 4 : 3; columnSpacing: 10; rowSpacing: 10
+                columns: width >= 700 ? 4 : width >= 470 ? 3 : 2; columnSpacing: 10; rowSpacing: 10
                 Repeater {
                     model: screen.shown
                     Rectangle {

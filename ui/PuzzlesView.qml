@@ -4,12 +4,15 @@ import QtQuick.Layouts
 
 // Puzzle themes: Lichess's theme categories and openings, each opening the next puzzle of that theme
 // on the main board. Loaded only while shown.
-RowLayout {
+GridLayout {
     id: puzzles
     objectName: "puzzlesView"
     required property var app
     required property Item focusScope
-    anchors.fill: parent; spacing: 18
+    anchors.fill: parent
+    // Narrow panes put the categories in a row above the themes instead of a fixed side column.
+    readonly property bool narrow: width < 620
+    columns: narrow ? 1 : 2; columnSpacing: 18; rowSpacing: 12
 
     // Lichess reply: {themes: {category: [{key, name, desc, count}]}, openings: [{family, openings}]}
     property var catalog: null
@@ -57,8 +60,9 @@ RowLayout {
     Component.onDestruction: if (app.viewKeys) app.viewKeys = null
 
     ColumnLayout {
-        // Narrow and fixed: the theme cards take the rest.
-        Layout.preferredWidth: 170; Layout.maximumWidth: 170; Layout.fillHeight: true; spacing: 10
+        // Narrow and fixed beside the cards; a short row above them in a narrow pane.
+        Layout.preferredWidth: puzzles.narrow ? -1 : 170; Layout.maximumWidth: puzzles.narrow ? 100000 : 170
+        Layout.fillWidth: puzzles.narrow; Layout.fillHeight: !puzzles.narrow; spacing: 10
         RowLayout {
             spacing: 10
             ActionButton { objectName: "puzzlesBack"; theme: app; compact: true; icon: "←"; hint: "g"; onClicked: app.view = "" }
@@ -67,7 +71,9 @@ RowLayout {
         ListView {
             id: categoryList
             objectName: "puzzleCategories"
-            Layout.fillWidth: true; Layout.fillHeight: true; clip: true; spacing: 2
+            Layout.fillWidth: true; Layout.fillHeight: !puzzles.narrow; Layout.preferredHeight: puzzles.narrow ? 38 : -1
+            orientation: puzzles.narrow ? ListView.Horizontal : ListView.Vertical
+            clip: true; spacing: 2
             model: puzzles.categories
             currentIndex: puzzles.category
             onCurrentIndexChanged: positionViewAtIndex(currentIndex, ListView.Contain)
@@ -75,23 +81,27 @@ RowLayout {
                 required property var modelData
                 required property int index
                 readonly property bool active: index === puzzles.category
-                width: categoryList.width; height: 36; radius: 8
+                width: puzzles.narrow ? categoryText.implicitWidth + 24 : categoryList.width; height: 36; radius: 8
                 color: active ? app.raised : categoryMouse.containsMouse ? app.panel : "transparent"
                 border.width: active ? 1 : 0; border.color: app.line
-                Text { anchors { left: parent.left; leftMargin: 12; verticalCenter: parent.verticalCenter } text: modelData.name; color: active ? app.fg : app.muted; font { pixelSize: 13; weight: active ? Font.DemiBold : Font.Normal } }
+                Text { id: categoryText; anchors { left: parent.left; leftMargin: 12; verticalCenter: parent.verticalCenter } text: modelData.name; color: active ? app.fg : app.muted; font { pixelSize: 13; weight: active ? Font.DemiBold : Font.Normal } }
                 MouseArea { id: categoryMouse; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: puzzles.selectCategory(parent.index) }
             }
             Text { visible: categoryList.count === 0; text: "Loading…"; color: app.muted; font.pixelSize: 12 }
         }
-        Text { Layout.fillWidth: true; wrapMode: Text.WordWrap; text: "[ ] category · enter start · d difficulty"; color: app.faint; font.pixelSize: 11 }
+        Text { visible: !puzzles.narrow; Layout.fillWidth: true; wrapMode: Text.WordWrap; text: "[ ] category\nenter start\nd difficulty"; color: app.faint; font.pixelSize: 11 }
     }
 
     ColumnLayout {
         Layout.fillWidth: true; Layout.fillHeight: true; spacing: 12
-        RowLayout {
+        Text {
+            Layout.fillWidth: true; elide: Text.ElideRight
+            text: puzzles.categories.length ? puzzles.categories[puzzles.category].name : ""; color: app.fg; font { pixelSize: 22; weight: Font.DemiBold }
+        }
+        // Wraps under the title when the pane is too narrow for one row.
+        Flow {
             Layout.fillWidth: true; spacing: 6
-            Text { Layout.fillWidth: true; text: puzzles.categories.length ? puzzles.categories[puzzles.category].name : ""; color: app.fg; font { pixelSize: 22; weight: Font.DemiBold } }
-            Text { text: "Difficulty"; color: app.muted; font.pixelSize: 12 }
+            Text { visible: !puzzles.narrow; text: "Difficulty"; color: app.muted; font.pixelSize: 12; anchors.verticalCenter: undefined }
             Repeater {
                 model: puzzles.difficulties
                 ActionButton {
