@@ -1,0 +1,22 @@
+name: Feature request
+description: Suggest something Gambito should do
+labels: [enhancement]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: What you're trying to do
+      description: The situation you hit, not only the feature you have in mind.
+    validations:
+      required: true
+  - type: input
+    id: key
+    attributes:
+      label: Which key would it use
+      description: Every control in Gambito has a key, and the button shows it. Check `?` in the app for what's taken.
+  - type: checkboxes
+    id: scope
+    attributes:
+      label: Scope
+      options:
+        - label: This works within Lichess's API terms (no automated play, no engine assistance in your own live games)

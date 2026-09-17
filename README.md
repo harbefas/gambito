@@ -86,6 +86,10 @@ Gambito is young and developed on Hyprland. Standard chess only (no variants or 
 
 Gambito is not affiliated with Lichess. It uses the public [Lichess API](https://lichess.org/api) and draws pieces with system font glyphs; no Lichess assets are copied.
 
+## Contributing
+
+Bug reports and small fixes are welcome: see [CONTRIBUTING.md](CONTRIBUTING.md). Never paste a Lichess token into an issue.
+
 ## License
 
 [GPL-3.0-or-later](LICENSE).

@@ -1,0 +1,43 @@
+name: Bug report
+description: Something in Gambito behaves wrong
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        **Never paste a Lichess token** here, or in a log or screenshot. If one leaks, revoke it at https://lichess.org/account/oauth/token
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened
+      description: What you did, what you expected, and what you got instead. A screenshot helps for anything visual.
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Gambito version
+      description: Output of `gambito --version`, or the commit you built.
+      placeholder: gambito 0.1.0
+    validations:
+      required: true
+  - type: input
+    id: system
+    attributes:
+      label: Distro, compositor and Quickshell version
+      placeholder: Arch · Hyprland 0.56 · quickshell 0.3.1
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Daemon log
+      description: "`journalctl --user -u gambito -n 50`, or the output of `gambito daemon` run in a terminal. Check it for tokens before pasting."
+      render: text
+  - type: checkboxes
+    id: reopened
+    attributes:
+      label: After updating the UI
+      description: Quickshell loads its QML at startup.
+      options:
+        - label: I closed every Gambito window and reopened it
