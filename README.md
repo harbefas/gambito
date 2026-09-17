@@ -9,8 +9,6 @@ Rust daemon · Quickshell UI · Stockfish analysis
 
 ![Playing, analysing with Stockfish, a second tiled window and zen mode, all from the keyboard](docs/screenshots/demo.gif)
 
-![Gambito analysing a Ruy Lopez with Stockfish](docs/screenshots/board.png)
-
 </div>
 
 Gambito brings Lichess to your desktop the way the rest of your setup already works: every action has a key, windows tile cleanly at any size, and the UI is Quickshell, the same Qt Quick toolkit behind [Omarchy 4](https://omarchy.org) and many Hyprland rices. A small Rust daemon holds the games, streams from Lichess and runs Stockfish, so any number of windows (or scripts) can share the same game.
