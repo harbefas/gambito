@@ -1,3 +1,4 @@
+//@ pragma AppId gambito
 import QtQuick
 import Quickshell
 import Quickshell.Io

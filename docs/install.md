@@ -46,7 +46,7 @@ After updating:
 
 The desktop entry puts Gambito in any app launcher: the Omarchy menu, Walker, fuzzel, rofi or your Quickshell launcher.
 
-Each `gambito open` adds a window to the running Gambito process, which costs a few MB rather than a new Quickshell instance. Windows are titled `Gambito`, so launch-or-focus scripts and window rules can match on the title.
+Each `gambito open` adds a window to the running Gambito process, which costs a few MB rather than a new Quickshell instance. Windows use the app ID (window class) `gambito`, matching the desktop entry, so docks and taskbars show the icon, and launch-or-focus scripts and window rules can match on it.
 
 **Omarchy.** Add a binding to `~/.config/hypr/bindings.lua`. `SUPER + ALT + C` is free in Omarchy's defaults, and this focuses Gambito when it is already open:
 
@@ -67,6 +67,12 @@ bind = SUPER ALT, C, exec, gambito open
 ```
 
 On other compositors, bind `gambito open` the same way.
+
+To float Gambito or send it to a workspace, match the class. Hyprland, Lua config:
+
+```lua
+hl.window_rule({ name = "gambito", match = { class = "^gambito$" }, workspace = "5" })
+```
 
 ## Sign in to Lichess
 
