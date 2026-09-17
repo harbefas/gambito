@@ -183,6 +183,11 @@ TEST = r'''
             lobby.blog = {official: [{title: "46th FIDE Chess Olympiad starts tomorrow", author: "Lichess", published: "2026-09-15T07:00:00Z", url: "https://lichess.org/@/Lichess/blog/x"}],
                           community: [{title: "Rounding up the first week of the GCL", author: "MEGALODON777hs", published: "2026-09-11T10:00:00Z", url: "https://lichess.org/@/a/blog/y"}]};
             compare(findChild(pageLayout, "newsList").count, 2);
+            // The lobby cursor continues from the games in progress into the news.
+            root.listIndex = root.orderedGames.length - 1; keyClick(Qt.Key_J); keyClick(Qt.Key_J);
+            compare(findChild(pageLayout, "newsList").currentIndex, 1);
+            keyClick(Qt.Key_J); compare(findChild(pageLayout, "newsList").currentIndex, 1); // stops at the last post
+            root.listIndex = 0;
             root.tell("", false); wait(300);
             pageLayout.grabToImage(result => result.saveToFile(Quickshell.env("GAMBITO_SCREENSHOT").replace(".png", "-lobby.png"))); wait(300);
             // TV page: separate from the play board; moves of the shown game in its side panel.

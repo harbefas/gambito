@@ -47,6 +47,7 @@ ColumnLayout {
             else if (key === "v" && lobby.puzzleTurn) lobby.pick = lobby.squareIndex(lobby.puzzle.solution[lobby.step].slice(0, 2));
             else if (key === "u") lobby.app.send("puzzle_open");
         }
+        function onOpenNews(index) { const item = news.model[index]; if (item) Qt.openUrlExternally(item.url); }
         function onReplied(cmd, data, error) {
             if (cmd === "puzzle") { if (data) lobby.puzzle = data.puzzle; else lobby.puzzleError = true; }
             else if (cmd === "blog") { if (data) lobby.blog = data.blog; else lobby.blogError = true; }
@@ -217,7 +218,7 @@ ColumnLayout {
             ListView {
                 id: gameList
                 Layout.fillWidth: true; Layout.preferredHeight: Math.max(40, Math.min(count, 3) * 62); clip: true; spacing: 4
-                model: app.orderedGames; currentIndex: app.listIndex
+                model: app.orderedGames; currentIndex: app.listIndex < count ? app.listIndex : -1
                 onCurrentIndexChanged: positionViewAtIndex(currentIndex, ListView.Contain)
                 delegate: GameRow {
                     required property var modelData
@@ -233,12 +234,20 @@ ColumnLayout {
                 objectName: "newsList"
                 Layout.fillWidth: true; Layout.fillHeight: true; clip: true; spacing: 2
                 model: lobby.blog ? lobby.blog.official.map(e => Object.assign({official: true}, e)).concat(lobby.blog.community) : []
+                // The keyboard cursor continues here after the games in progress.
+                currentIndex: Math.max(-1, app.listIndex - app.orderedGames.length)
+                onCurrentIndexChanged: if (currentIndex >= 0) positionViewAtIndex(currentIndex, ListView.Contain)
+                onCountChanged: app.newsCount = count
+                Component.onDestruction: app.newsCount = 0
                 ScrollBar.vertical: ScrollBar { }
                 delegate: Rectangle {
+                    id: newsRow
                     required property var modelData
+                    required property int index
+                    readonly property bool selected: index === news.currentIndex
                     width: news.width; height: 44; radius: 8
-                    color: newsMouse.containsMouse ? app.raised : "transparent"
-                    MouseArea { id: newsMouse; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: Qt.openUrlExternally(parent.modelData.url) }
+                    color: selected ? app.raised : "transparent"; border.width: selected ? 1 : 0; border.color: app.line
+                    MouseArea { id: newsMouse; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onPositionChanged: mouse => { if (app.pointerMoved(newsMouse, mouse)) app.listIndex = app.orderedGames.length + newsRow.index; }; onClicked: Qt.openUrlExternally(parent.modelData.url) }
                     Column {
                         anchors { left: parent.left; right: parent.right; verticalCenter: parent.verticalCenter; leftMargin: 8; rightMargin: 8 } spacing: 2
                         Text { width: parent.width; elide: Text.ElideRight; text: modelData.title; color: app.fg; font { pixelSize: 13; weight: modelData.official ? Font.DemiBold : Font.Normal } }

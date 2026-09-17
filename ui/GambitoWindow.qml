@@ -37,7 +37,8 @@ Scope {
     property int cursor: 52
     property int origin: -1
     property int listIndex: 0
-    // Lobby list (games in progress); listIndex indexes orderedGames.
+    // Lobby list: games in progress, then news. listIndex indexes orderedGames, and continues into the news.
+    property int newsCount: 0
     // Game list order: in progress, analysis boards (like Lichess, not games being played), finished.
     readonly property var activeGames: games.filter(g => isActive(g) && !g.analysis && !isWatched(g))
     readonly property var analysisGames: games.filter(g => g.analysis).sort((a, b) => b.updated_ms - a.updated_ms)
@@ -137,7 +138,7 @@ Scope {
     property var board: decodeFen(game ? (rewound ? positions.fens[viewPly] : game.fen) : "")
     readonly property var helpSections: [
         {title: "board", rows: [["c", "player chat"], ["T / Y", "request or accept / decline takeback"], ["h j k l / arrows", "move cursor"], ["enter / space", "select square"], ["[  ]", "previous / next move"], ["{  }", "start / live position"], ["e", "engine on / off"], ["m", "opening explorer on / off"], ["a", "analyse / branch here"], ["b", "return to source"], ["v u y", "puzzle hint / solution / retry"], ["F", "FEN"], ["L", "open on lichess.org"], ["D R", "draw / resign"], ["z", "zen mode: board only"], ["r", "load Lichess analysis"], ["x", "delete analysis board"], ["- / +", "decrease / increase depth"], ["d", "set analysis depth"], ["i", "type a move"], [":", "command"], ["f", "flip board"], ["esc", "cancel"]]},
-        {title: "window", rows: [["C", "challenges (u player, t time, c color, v rated, s send)"], ["g", "lobby"], ["p", "profile (1–4 tabs, s r o history filters, l sign out)"], ["s c", "find opponent / play computer"], ["l", "sign in / out (Enter confirms)"], ["t", "Lichess TV (j/k channel, o open on board, L lichess.org)"], ["o", "openings (arrows pick, enter play, backspace back, b start, a analyse, s r filters)"], ["z", "puzzle themes ([ ] category, d difficulty)"], ["n", "new local game"], ["w", "new window"], ["?", "help"], ["q", "close"]]},
+        {title: "window", rows: [["C", "challenges (u player, t time, c color, v rated, s send)"], ["g", "lobby"], ["p", "profile (1–4 tabs, s r o history filters, l sign out)"], ["s c", "find opponent / play computer"], ["l", "sign in / out (Enter confirms)"], ["t", "Lichess TV (j/k channel, o open on board, L lichess.org)"], ["o", "openings (arrows pick, enter play, backspace back, b start, a analyse, s r filters)"], ["z", "puzzle themes ([ ] category, d difficulty)"], ["j k / enter", "lobby: games in progress, then news"], ["n", "new local game"], ["w", "new window"], ["?", "help"], ["q", "close"]]},
         {title: "commands", rows: [[":challenges", "send and respond to invitations"], [":challenge USER [MIN INC rated]", "challenge a player"], [":accept / :decline / :cancelchallenge ID", "respond to an invitation"], [":chat [MESSAGE]", "toggle chat or send message"], [":takeback [no]", "request / accept / decline takeback"], [":analyse", "branch from viewed position"], [":fen FEN", "analyse a FEN position"], [":source", "return to source game"], [":lichess", "load Lichess analysis"], [":explorer", "opening explorer on / off"], [":puzzle", "daily puzzle on the board"], [":hint", "puzzle hint"], [":retry", "restart puzzle"], [":solution", "show puzzle solution"], [":delete", "delete analysis board"], [":depth N", "set analysis depth (1–245)"], [":local", "new local game"], [":open ID", "open Lichess game"], [":seek 10 5 [rated]", "seek opponent"], [":cancel", "cancel seek"], [":ai 1-8", "play Lichess AI"], [":play", "online play options"], [":login", "connect Lichess"], [":logout", "sign out of Lichess"], [":resign", "resign"], [":draw", "offer or accept draw"], [":confirm", "confirm action"], [":games", "lobby"], [":profile", "profile: ratings, history, boards"], [":tv", "Lichess TV"], [":zen", "board only (z on the board)"], [":openings", "opening explorer page"], [":puzzles", "puzzle themes"], [":next", "next puzzle of this theme"], [":window", "new window"], [":quit", "close"]]},
         {title: "moves", rows: [["e4  Nf3  O-O", "SAN"], ["e2e4", "UCI"], ["e7e8q", "promotion"]]}
     ]
@@ -300,6 +301,7 @@ Scope {
     function isActive(g) { return g.status === "started" || g.status === "created"; }
     // Lobby puzzle card keys, handled by the loaded LobbyView (y retry, v show move, u open on board).
     signal lobbyPuzzleKey(string key)
+    signal openNews(int index)
     function tileAction(id) {
         if ((id === "seek" || id === "ai") && !account) { send("login"); return; }
         if (id === "local") send("local");
@@ -592,8 +594,9 @@ Scope {
                         else if (key === "b" && root.loggingIn && root.loginUrl) Qt.openUrlExternally(root.loginUrl);
                         else if (key === "o") root.view = "openings";
                         else if (key === "z") root.view = "puzzles";
-                        else if (key === "j" || event.key === Qt.Key_Down) root.listIndex = Math.min(root.orderedGames.length - 1, root.listIndex + 1);
+                        else if (key === "j" || event.key === Qt.Key_Down) root.listIndex = Math.min(root.orderedGames.length + root.newsCount - 1, root.listIndex + 1);
                         else if (key === "k" || event.key === Qt.Key_Up) root.listIndex = Math.max(0, root.listIndex - 1);
+                        else if (event.key === Qt.Key_Return && root.listIndex >= root.orderedGames.length) root.openNews(root.listIndex - root.orderedGames.length);
                         else if (event.key === Qt.Key_Return && root.orderedGames.length) root.choose(root.orderedGames[Math.max(0,root.listIndex)].id);
                         else if (key === "x" && root.orderedGames[root.listIndex]) root.confirmDelete(root.orderedGames[root.listIndex].id);
                         else return;
