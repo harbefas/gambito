@@ -118,8 +118,8 @@ ColumnLayout {
                 Text { width: parent.width; elide: Text.ElideRight; text: app.loggingIn ? "Waiting for Lichess…" : "Play online"; color: app.fg; font { pixelSize: 14; weight: Font.DemiBold } }
                 Text { width: parent.width; elide: Text.ElideRight; text: app.loggingIn ? "Approve Gambito in the browser tab that just opened." : "Connect your Lichess account to seek opponents and play the computer."; color: app.muted; font.pixelSize: 12 }
             }
-            ActionButton { visible: app.loggingIn && app.loginUrl !== ""; theme: app; label: "Open browser again"; onClicked: Qt.openUrlExternally(app.loginUrl) }
-            ActionButton { objectName: "cancelLoginButton"; visible: app.loggingIn; theme: app; label: "Cancel"; onClicked: app.send("cancel_login") }
+            ActionButton { visible: app.loggingIn && app.loginUrl !== ""; theme: app; label: "Open browser again"; hint: "b"; onClicked: Qt.openUrlExternally(app.loginUrl) }
+            ActionButton { objectName: "cancelLoginButton"; visible: app.loggingIn; theme: app; label: "Cancel"; hint: "Esc"; onClicked: app.send("cancel_login") }
             ActionButton { objectName: "connectButton"; visible: !app.loggingIn; theme: app; kind: "primary"; icon: "↗"; label: "Connect Lichess"; hint: "l"; onClicked: app.send("login") }
         }
     }
@@ -218,6 +218,7 @@ ColumnLayout {
                 id: gameList
                 Layout.fillWidth: true; Layout.preferredHeight: Math.max(40, Math.min(count, 3) * 62); clip: true; spacing: 4
                 model: app.orderedGames; currentIndex: app.listIndex
+                onCurrentIndexChanged: positionViewAtIndex(currentIndex, ListView.Contain)
                 delegate: GameRow {
                     required property var modelData
                     width: gameList.width; app: lobby.app; game: modelData

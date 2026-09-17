@@ -19,7 +19,7 @@ Rectangle {
     Behavior on color { ColorAnimation { duration: 100 } }
 
     // Below the row content so its buttons stay clickable.
-    MouseArea { anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onEntered: row.hovered(); onClicked: row.app.choose(row.game.id) }
+    MouseArea { id: rowMouse; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onPositionChanged: mouse => { if (row.app.pointerMoved(rowMouse, mouse)) row.hovered(); } onClicked: row.app.choose(row.game.id) }
     RowLayout {
         anchors { fill: parent; leftMargin: 14; rightMargin: 14 } spacing: 14
         Rectangle {

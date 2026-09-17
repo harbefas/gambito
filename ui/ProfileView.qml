@@ -73,6 +73,14 @@ ColumnLayout {
         else if (tab === "puzzles") app.send("puzzle_next", {angle: item.key, difficulty: app.puzzleDifficulty});
         else if (tab === "boards") app.choose(item.id);
     }
+    // Cycles a history filter; speed and rated refetch, result filters loaded rows.
+    function cycleFilter(kind) {
+        const options = kind === "speed" ? [""].concat(speeds.filter(s => s[0] !== "puzzle").map(s => s[0])) : kind === "rated" ? ["", "rated", "casual"] : ["", "win", "loss", "draw"];
+        const value = kind === "speed" ? speedFilter : kind === "rated" ? ratedFilter : resultFilter;
+        const next = options[(Math.max(0, options.indexOf(value)) + 1) % options.length];
+        if (kind === "result") resultFilter = next;
+        else { if (kind === "speed") speedFilter = next; else ratedFilter = next; loadHistory(true); }
+    }
     function date(ms) { return new Date(ms).toLocaleDateString(Qt.locale(), "d MMM yyyy"); }
     function duration(seconds) { const h = Math.floor(seconds / 3600); return h >= 1 ? h + " h" : Math.round(seconds / 60) + " min"; }
 
@@ -99,7 +107,8 @@ ColumnLayout {
             else if (key === "2") profile.setTab("boards");
             else if (key === "3") profile.setTab("activity");
             else if (key === "4") profile.setTab("puzzles");
-            else if (key === "l" && app.account) app.send("logout");
+            else if (key === "l" && app.account) app.runCommand(":logout");
+            else if (profile.tab === "games" && ["s", "r", "o"].includes(key)) profile.cycleFilter({"s": "speed", "r": "rated", "o": "result"}[key]);
             else if (key === "j" || event.key === Qt.Key_Down) profile.index = Math.min(profile.currentList.length - 1, profile.index + 1);
             else if (key === "k" || event.key === Qt.Key_Up) profile.index = Math.max(0, profile.index - 1);
             else if (event.key === Qt.Key_Return) profile.activate(profile.index);
@@ -125,7 +134,7 @@ ColumnLayout {
             }
         }
         ActionButton { objectName: "challengesButton"; theme: app; label: "Challenges" + (app.challenges.length ? " (" + app.challenges.length + ")" : ""); hint: "C"; onClicked: app.runCommand(":challenges") }
-        ActionButton { objectName: "profileSignOut"; visible: !!app.account; theme: app; compact: true; label: "Sign out"; hint: "l"; onClicked: app.send("logout") }
+        ActionButton { objectName: "profileSignOut"; visible: !!app.account; theme: app; compact: true; label: "Sign out"; hint: "l"; onClicked: app.runCommand(":logout") }
         Row {
             visible: !!profile.info; spacing: 18
             Repeater {
@@ -301,13 +310,8 @@ ColumnLayout {
                 readonly property string value: modelData[0] === "speed" ? profile.speedFilter : modelData[0] === "rated" ? profile.ratedFilter : profile.resultFilter
                 readonly property int at: Math.max(0, options.findIndex(o => o[0] === value))
                 objectName: "filter_" + modelData[0]
-                theme: app; compact: true; label: options[at][1] + " ▾"
-                // Cycles through the options; speed and rated refetch, result filters loaded rows.
-                onClicked: {
-                    const next = options[(at + 1) % options.length][0];
-                    if (modelData[0] === "result") profile.resultFilter = next;
-                    else { if (modelData[0] === "speed") profile.speedFilter = next; else profile.ratedFilter = next; profile.loadHistory(true); }
-                }
+                theme: app; compact: true; label: options[at][1] + " ▾"; hint: ({"speed": "s", "rated": "r", "result": "o"})[modelData[0]]
+                onClicked: profile.cycleFilter(modelData[0])
             }
         }
     }
@@ -318,6 +322,7 @@ ColumnLayout {
         Layout.fillWidth: true; Layout.fillHeight: true; clip: true; spacing: 4
         model: profile.currentList
         currentIndex: profile.index
+        onCurrentIndexChanged: positionViewAtIndex(currentIndex, ListView.Contain)
         onAtYEndChanged: if (atYEnd && profile.tab === "games" && count > 0) profile.loadHistory(false)
         ScrollBar.vertical: ScrollBar { }
         delegate: Loader {
@@ -357,7 +362,7 @@ ColumnLayout {
             objectName: "historyRow" + i
             height: 50; radius: 9
             color: i === profile.index ? app.raised : "transparent"; border.width: i === profile.index ? 1 : 0; border.color: app.line
-            MouseArea { anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onEntered: profile.index = hrow.i; onClicked: profile.activate(hrow.i) }
+            MouseArea { id: historyMouse; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onPositionChanged: mouse => { if (app.pointerMoved(historyMouse, mouse)) profile.index = hrow.i; } onClicked: profile.activate(hrow.i) }
             RowLayout {
                 anchors { fill: parent; leftMargin: 12; rightMargin: 12 } spacing: 12
                 Rectangle {
@@ -441,7 +446,7 @@ ColumnLayout {
             readonly property int i: parent.index
             height: 44; radius: 9
             color: i === profile.index ? app.raised : "transparent"; border.width: i === profile.index ? 1 : 0; border.color: app.line
-            MouseArea { anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onEntered: profile.index = trow.i; onClicked: profile.activate(trow.i) }
+            MouseArea { id: themeMouse; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onPositionChanged: mouse => { if (app.pointerMoved(themeMouse, mouse)) profile.index = trow.i; } onClicked: profile.activate(trow.i) }
             RowLayout {
                 anchors { fill: parent; leftMargin: 12; rightMargin: 12 } spacing: 14
                 Text { Layout.fillWidth: true; elide: Text.ElideRight; text: trow.t.name; color: app.fg; font { pixelSize: 13; weight: Font.Medium } }

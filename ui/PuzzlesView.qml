@@ -69,6 +69,8 @@ RowLayout {
             objectName: "puzzleCategories"
             Layout.fillWidth: true; Layout.fillHeight: true; clip: true; spacing: 2
             model: puzzles.categories
+            currentIndex: puzzles.category
+            onCurrentIndexChanged: positionViewAtIndex(currentIndex, ListView.Contain)
             delegate: Rectangle {
                 required property var modelData
                 required property int index
@@ -95,7 +97,7 @@ RowLayout {
                 ActionButton {
                     required property var modelData
                     objectName: "difficulty_" + modelData[0]
-                    theme: app; compact: true; label: modelData[1]
+                    theme: app; compact: true; label: modelData[1]; hint: app.puzzleDifficulty === modelData[0] ? "d" : ""
                     kind: app.puzzleDifficulty === modelData[0] ? "primary" : "normal"
                     onClicked: app.puzzleDifficulty = modelData[0]
                 }
@@ -130,7 +132,7 @@ RowLayout {
                         }
                         Text { width: parent.width; wrapMode: Text.WordWrap; maximumLineCount: 2; elide: Text.ElideRight; text: cell.modelData.desc || ""; color: app.muted; font.pixelSize: 12 }
                     }
-                    MouseArea { id: cellMouse; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onEntered: puzzles.index = cell.index; onClicked: puzzles.start(cell.index) }
+                    MouseArea { id: cellMouse; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onPositionChanged: mouse => { if (app.pointerMoved(cellMouse, mouse)) puzzles.index = cell.index; } onClicked: puzzles.start(cell.index) }
                 }
             }
         }

@@ -256,6 +256,7 @@ TEST = r'''
             pageLayout.grabToImage(result => result.saveToFile(Quickshell.env("GAMBITO_SCREENSHOT").replace(".png", "-openings.png"))); wait(300);
             keyClick(Qt.Key_2); compare(op.tab, "examples"); compare(findChild(pageLayout, "openingsGames").count, 1);
             keyClick(Qt.Key_M); compare(op.db, "lichess"); verify(findChild(pageLayout, "openingsSpeed").visible);
+            keyClick(Qt.Key_S); compare(op.speedAt, 1); keyClick(Qt.Key_R); compare(op.ratingAt, 1);
             settle(); op.db = "masters"; settle(); op.result = tree;
             const beforeOpen = root.serial;
             op.openExample(0); compare(root.pending[String(beforeOpen + 1)], "analyse");
@@ -270,6 +271,7 @@ TEST = r'''
                           openings: [{family: {key: "Sicilian_Defense", name: "Sicilian Defense", count: 204576}, openings: [{name: "Old Sicilian"}, {name: "Alapin Variation"}]}]};
             compare(pz.categories.length, 4); compare(pz.categories[3].name, "By opening");
             keyClick(Qt.Key_BracketRight); compare(pz.category, 1); compare(findChild(pageLayout, "puzzleThemes").count, 3);
+            compare(findChild(pageLayout, "puzzleCategories").currentIndex, 1);
             keyClick(Qt.Key_L); compare(pz.index, 1);
             keyClick(Qt.Key_D); compare(root.puzzleDifficulty, "harder");
             wait(300);
@@ -311,6 +313,12 @@ TEST = r'''
             pv2.resultFilter = "loss"; compare(pv2.currentList.length, 1); pv2.resultFilter = "";
             verify(findChild(pageLayout, "ratingChart").visible); verify(findChild(pageLayout, "perfStats").visible);
             keyClick(Qt.Key_J); compare(pv2.index, 1);
+            keyClick(Qt.Key_O); compare(pv2.resultFilter, "win"); pv2.resultFilter = "";
+            // Hover moves the selection only when the pointer moves, not when rows scroll under it.
+            verify(root.pointerMoved(pageLayout, {x: 7, y: 9})); verify(!root.pointerMoved(pageLayout, {x: 7, y: 9}));
+            // Signing out asks first; Esc cancels without leaving the profile.
+            keyClick(Qt.Key_L); compare(root.confirmation, "logout");
+            keyClick(Qt.Key_Escape); compare(root.confirmation, ""); verify(!!findChild(pageLayout, "profileView"));
             // Puzzles tab: summary, recent results and themes weakest first; Enter practises one.
             keyClick(Qt.Key_4); compare(pv2.tab, "puzzles");
             tryVerify(() => pv2.puzzleError !== "", 5000); // the real request fails here; inject after its reply

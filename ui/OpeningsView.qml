@@ -48,6 +48,9 @@ ColumnLayout {
         load();
     }
     function back() { if (line.length) { line = line.slice(0, -1); load(); } }
+    function toStart() { line = []; load(); }
+    function cycleSpeed() { speedAt = (speedAt + 1) % speedOptions.length; load(); }
+    function cycleRating() { ratingAt = (ratingAt + 1) % ratingOptions.length; load(); }
     function analyse() { app.send("analyse", {line: line.map(s => s.uci)}); }
     function openExample(i) {
         const g = examples[i];
@@ -80,6 +83,9 @@ ColumnLayout {
             else if (key === "2") { openings.tab = "examples"; openings.index = 0; }
             else if (key === "m") openings.db = openings.db === "masters" ? "lichess" : "masters";
             else if (key === "a") openings.analyse();
+            else if (key === "s" && openings.db === "lichess") openings.cycleSpeed();
+            else if (key === "r" && openings.db === "lichess") openings.cycleRating();
+            else if (key === "b" && openings.line.length) openings.toStart();
             else if (event.key === Qt.Key_Backspace || key === "u") openings.back();
             else if (event.key === Qt.Key_Return) { if (openings.tab === "continuations") openings.play(openings.index); else openings.openExample(openings.index); }
             else if (key === "l" || event.key === Qt.Key_Right) openings.index = Math.min(last, openings.index + 1);
@@ -109,8 +115,8 @@ ColumnLayout {
             }
         }
         // Lichess database filters; they cycle through their options and refetch.
-        ActionButton { objectName: "openingsSpeed"; visible: openings.db === "lichess"; theme: app; compact: true; label: openings.speedOptions[openings.speedAt][0] + " ▾"; onClicked: { openings.speedAt = (openings.speedAt + 1) % openings.speedOptions.length; openings.load(); } }
-        ActionButton { objectName: "openingsRating"; visible: openings.db === "lichess"; theme: app; compact: true; label: openings.ratingOptions[openings.ratingAt][0] + " ▾"; onClicked: { openings.ratingAt = (openings.ratingAt + 1) % openings.ratingOptions.length; openings.load(); } }
+        ActionButton { objectName: "openingsSpeed"; visible: openings.db === "lichess"; theme: app; compact: true; label: openings.speedOptions[openings.speedAt][0] + " ▾"; hint: "s"; onClicked: openings.cycleSpeed() }
+        ActionButton { objectName: "openingsRating"; visible: openings.db === "lichess"; theme: app; compact: true; label: openings.ratingOptions[openings.ratingAt][0] + " ▾"; hint: "r"; onClicked: openings.cycleRating() }
     }
 
     // Current position: board, name, totals and results.
@@ -139,7 +145,7 @@ ColumnLayout {
                 RowLayout {
                     spacing: 6
                     ActionButton { objectName: "openingsUndo"; theme: app; compact: true; icon: "‹"; label: "Back"; hint: "u"; enabled: openings.line.length > 0; opacity: enabled ? 1 : 0.4; onClicked: openings.back() }
-                    ActionButton { theme: app; compact: true; label: "Start"; enabled: openings.line.length > 0; opacity: enabled ? 1 : 0.4; onClicked: { openings.line = []; openings.load(); } }
+                    ActionButton { theme: app; compact: true; label: "Start"; hint: "b"; enabled: openings.line.length > 0; opacity: enabled ? 1 : 0.4; onClicked: openings.toStart() }
                     ActionButton { objectName: "openingsAnalyse"; theme: app; compact: true; icon: "⤢"; label: "Analyse"; hint: "a"; onClicked: openings.analyse() }
                 }
             }
@@ -196,7 +202,7 @@ ColumnLayout {
                         app: openings.app; fen: cell.modelData.fen || ""; lastMove: cell.modelData.uci
                     }
                 }
-                MouseArea { id: cellMouse; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onEntered: openings.index = cell.index; onClicked: openings.play(cell.index) }
+                MouseArea { id: cellMouse; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onPositionChanged: mouse => { if (app.pointerMoved(cellMouse, mouse)) openings.index = cell.index; } onClicked: openings.play(cell.index) }
             }
         }
         Text { anchors.centerIn: parent; visible: grid.count === 0 && !!openings.book; text: "No continuations in this database"; color: app.muted; font.pixelSize: 13 }
@@ -209,6 +215,7 @@ ColumnLayout {
         Layout.fillWidth: true; Layout.fillHeight: true; clip: true; spacing: 4
         model: openings.examples
         currentIndex: openings.index
+        onCurrentIndexChanged: positionViewAtIndex(currentIndex, ListView.Contain)
         ScrollBar.vertical: ScrollBar { }
         delegate: Rectangle {
             id: gameRow
@@ -216,7 +223,7 @@ ColumnLayout {
             required property int index
             width: games.width; height: 46; radius: 9
             color: index === openings.index ? app.raised : "transparent"; border.width: index === openings.index ? 1 : 0; border.color: app.line
-            MouseArea { anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onEntered: openings.index = gameRow.index; onClicked: openings.openExample(gameRow.index) }
+            MouseArea { id: exampleMouse; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onPositionChanged: mouse => { if (app.pointerMoved(exampleMouse, mouse)) openings.index = gameRow.index; } onClicked: openings.openExample(gameRow.index) }
             RowLayout {
                 anchors { fill: parent; leftMargin: 12; rightMargin: 12 } spacing: 12
                 Text {

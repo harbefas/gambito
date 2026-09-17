@@ -28,6 +28,7 @@ RowLayout {
 
     function select(i) { channel = channelInfo[Math.max(0, Math.min(channelInfo.length - 1, i))][0]; crosstable = null; }
     // Opens the shown game on the main board, where the engine and analysis boards work.
+    function openLichess() { if (board.streaming) Qt.openUrlExternally("https://lichess.org/" + board.tv.id); }
     function analyse() {
         if (!board.streaming) { app.tell("Waiting for the TV game…", true); return; }
         app.watchOrientation[board.tv.id] = board.orientation;
@@ -55,6 +56,7 @@ RowLayout {
             else if (key === "k" || event.key === Qt.Key_Up) tvView.select(tvView.index - 1);
             else if (key === "o" || event.key === Qt.Key_Return) tvView.analyse();
             else if (key === "z") tvView.app.zen = !tvView.app.zen;
+            else if (key === "L") tvView.openLichess();
             else return false;
             return true;
         };
@@ -185,7 +187,7 @@ RowLayout {
             RowLayout {
                 Layout.fillWidth: true; spacing: 6
                 ActionButton { objectName: "tvAnalyse"; Layout.fillWidth: true; theme: app; compact: true; icon: "⤢"; label: "Open on board"; hint: "o"; enabled: board.streaming; opacity: enabled ? 1 : 0.4; onClicked: tvView.analyse() }
-                ActionButton { theme: app; compact: true; icon: "↗"; enabled: board.streaming; opacity: enabled ? 1 : 0.4; onClicked: Qt.openUrlExternally("https://lichess.org/" + board.tv.id) }
+                ActionButton { theme: app; compact: true; icon: "↗"; hint: "L"; enabled: board.streaming; opacity: enabled ? 1 : 0.4; onClicked: tvView.openLichess() }
             }
         }
     }

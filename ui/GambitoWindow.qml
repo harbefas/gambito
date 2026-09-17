@@ -137,7 +137,7 @@ Scope {
     property var board: decodeFen(game ? (rewound ? positions.fens[viewPly] : game.fen) : "")
     readonly property var helpSections: [
         {title: "board", rows: [["c", "player chat"], ["T / Y", "request or accept / decline takeback"], ["h j k l / arrows", "move cursor"], ["enter / space", "select square"], ["[  ]", "previous / next move"], ["{  }", "start / live position"], ["e", "engine on / off"], ["m", "opening explorer on / off"], ["a", "analyse / branch here"], ["b", "return to source"], ["v u y", "puzzle hint / solution / retry"], ["F", "FEN"], ["L", "open on lichess.org"], ["D R", "draw / resign"], ["z", "zen mode: board only"], ["r", "load Lichess analysis"], ["x", "delete analysis board"], ["- / +", "decrease / increase depth"], ["d", "set analysis depth"], ["i", "type a move"], [":", "command"], ["f", "flip board"], ["esc", "cancel"]]},
-        {title: "window", rows: [["C", "challenges (u player, t time, c color, v rated, s send)"], ["g", "lobby"], ["p", "profile"], ["s c", "find opponent / play computer"], ["l", "sign in / out"], ["t", "Lichess TV (j/k channel, o open on board)"], ["o", "openings (arrows pick, enter play, backspace back, a analyse)"], ["z", "puzzle themes ([ ] category, d difficulty)"], ["n", "new local game"], ["w", "new window"], ["?", "help"], ["q", "close"]]},
+        {title: "window", rows: [["C", "challenges (u player, t time, c color, v rated, s send)"], ["g", "lobby"], ["p", "profile (1–4 tabs, s r o history filters, l sign out)"], ["s c", "find opponent / play computer"], ["l", "sign in / out (Enter confirms)"], ["t", "Lichess TV (j/k channel, o open on board, L lichess.org)"], ["o", "openings (arrows pick, enter play, backspace back, b start, a analyse, s r filters)"], ["z", "puzzle themes ([ ] category, d difficulty)"], ["n", "new local game"], ["w", "new window"], ["?", "help"], ["q", "close"]]},
         {title: "commands", rows: [[":challenges", "send and respond to invitations"], [":challenge USER [MIN INC rated]", "challenge a player"], [":accept / :decline / :cancelchallenge ID", "respond to an invitation"], [":chat [MESSAGE]", "toggle chat or send message"], [":takeback [no]", "request / accept / decline takeback"], [":analyse", "branch from viewed position"], [":fen FEN", "analyse a FEN position"], [":source", "return to source game"], [":lichess", "load Lichess analysis"], [":explorer", "opening explorer on / off"], [":puzzle", "daily puzzle on the board"], [":hint", "puzzle hint"], [":retry", "restart puzzle"], [":solution", "show puzzle solution"], [":delete", "delete analysis board"], [":depth N", "set analysis depth (1–245)"], [":local", "new local game"], [":open ID", "open Lichess game"], [":seek 10 5 [rated]", "seek opponent"], [":cancel", "cancel seek"], [":ai 1-8", "play Lichess AI"], [":play", "online play options"], [":login", "connect Lichess"], [":logout", "sign out of Lichess"], [":resign", "resign"], [":draw", "offer or accept draw"], [":confirm", "confirm action"], [":games", "lobby"], [":profile", "profile: ratings, history, boards"], [":tv", "Lichess TV"], [":zen", "board only (z on the board)"], [":openings", "opening explorer page"], [":puzzles", "puzzle themes"], [":next", "next puzzle of this theme"], [":window", "new window"], [":quit", "close"]]},
         {title: "moves", rows: [["e4  Nf3  O-O", "SAN"], ["e2e4", "UCI"], ["e7e8q", "promotion"]]}
     ]
@@ -195,6 +195,14 @@ Scope {
         if (!game || !engineAllowed) { tell("Analysis is off while you play a live Lichess game (fair play).", true); return; }
         branchingFrom = selectedId;
         send("analyse", {ply: shownPly()});
+    }
+    // Hover selects a row only when the pointer really moves: keyboard scrolling slides rows under a resting pointer.
+    property point pointer
+    function pointerMoved(area, mouse) {
+        const p = area.mapToItem(null, mouse.x, mouse.y);
+        const moved = p.x !== pointer.x || p.y !== pointer.y;
+        pointer = p;
+        return moved;
     }
     function confirmDelete(id) {
         const g = games.find(g => g.id === id);
@@ -439,7 +447,7 @@ Scope {
             send("seek", {minutes:Number(words[0]), increment:Number(words[1] || 0), rated:words[2] === "rated"}); break;
         case "cancel": send(loggingIn ? "cancel_login" : "cancel"); break;
         case "login": send("login"); break;
-        case "logout": send("logout"); break;
+        case "logout": confirmation = "logout"; tell("Sign out of Lichess? Press Enter to confirm or Esc.", false); break;
         case "ai": send("ai", {level:Number(words[0] || 1)}); break;
         case "resign": case "draw":
             if (!game) { tell("Open a game first.", true); break; }
@@ -555,6 +563,7 @@ Scope {
                         event.accepted = true; return;
                     }
                     if (event.key === Qt.Key_Escape && !root.game && root.view !== "" && !root.confirmation) { root.view = ""; event.accepted = true; return; }
+                    if (event.key === Qt.Key_Escape && root.loggingIn && !root.confirmation) { root.send("cancel_login"); event.accepted = true; return; }
                     if (event.key === Qt.Key_Escape) { root.origin = -1; root.confirmation = ""; root.promotion = ""; root.helpVisible = false; root.tell("", false); event.accepted = true; return; }
                     if (root.helpVisible) { event.accepted = true; return; }
                     if (root.confirmation && (event.key === Qt.Key_Return || event.key === Qt.Key_Enter)) { root.runCommand(":confirm"); event.accepted = true; return; }
@@ -578,8 +587,9 @@ Scope {
                         else if (key === "t") root.view = "tv";
                         else if (key === "s") root.tileAction("seek");
                         else if (key === "c") root.tileAction("ai");
-                        else if (key === "l") root.send(root.account ? "logout" : "login");
+                        else if (key === "l") { if (root.account) root.runCommand(":logout"); else root.send("login"); }
                         else if (key === "y" || key === "v" || key === "u") root.lobbyPuzzleKey(key);
+                        else if (key === "b" && root.loggingIn && root.loginUrl) Qt.openUrlExternally(root.loginUrl);
                         else if (key === "o") root.view = "openings";
                         else if (key === "z") root.view = "puzzles";
                         else if (key === "j" || event.key === Qt.Key_Down) root.listIndex = Math.min(root.orderedGames.length - 1, root.listIndex + 1);
