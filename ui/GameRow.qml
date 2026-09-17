@@ -29,7 +29,7 @@ Rectangle {
         Column {
             Layout.fillWidth: true; spacing: 3
             Text { width: parent.width; elide: Text.ElideRight; text: row.game.white + "  vs  " + row.game.black; color: row.app.fg; font { pixelSize: 14; weight: Font.Medium } }
-            Text { text: row.app.rowInfo(row.game); color: row.app.muted; font.pixelSize: 12 }
+            Text { width: parent.width; elide: Text.ElideRight; text: row.app.rowInfo(row.game); color: row.app.muted; font.pixelSize: 12 }
         }
         Rectangle {
             visible: row.yourTurn || row.finished

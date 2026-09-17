@@ -552,10 +552,13 @@ Scope {
 
         ColumnLayout {
             id: pageLayout
-            anchors.fill: parent; anchors.margins: 28; spacing: 18
+            // Tiled panes can be small: less chrome around the page.
+            anchors.fill: parent; anchors.margins: window.width < 700 || window.height < 500 ? 10 : 28; spacing: window.width < 700 || window.height < 500 ? 10 : 18
             FocusScope {
                 id: boardFocus
                 Layout.fillWidth: true; Layout.fillHeight: true
+                // Views never draw under the command bar, whatever the pane size.
+                clip: true
                 focus: true
                 Keys.onPressed: event => {
                     if (event.key === Qt.Key_Escape && root.playVisible) { if (root.seeking) root.send("cancel"); else root.playVisible = false; event.accepted = true; return; }
@@ -692,6 +695,9 @@ Scope {
                 objectName: "commandBar"
                 visible: !(root.zen && (root.game || root.view === "tv")) || command.activeFocus || !!root.confirmation
                 Layout.fillWidth: true; height: 46; radius: 5
+                // Narrow panes keep each button's icon and key, dropping labels, then secondary buttons.
+                readonly property bool narrow: width < 860
+                readonly property bool tiny: width < 520
                 color: root.panel; border.width: 1; border.color: command.activeFocus ? root.accent : root.line
                 RowLayout {
                     anchors.fill: parent; anchors.leftMargin: 14; anchors.rightMargin: 14; spacing: 12
@@ -699,7 +705,7 @@ Scope {
                     TextField {
                         id: command
                         Layout.fillWidth: true; color: root.fg; selectionColor: root.mix(root.bg, root.accent, 0.4); selectedTextColor: root.fg
-                        placeholderText: root.game ? "i move   : command   ? help" : "n new game   : command   ? help"
+                        placeholderText: commandBar.narrow && !root.game ? "" : root.game ? "i move   : command   ? help" : "n new game   : command   ? help"
                         placeholderTextColor: root.muted; font { family: root.mono; pixelSize: 14 }
                         background: Item {}
                         onAccepted: { root.runCommand(text); text = ""; boardFocus.forceActiveFocus(); }
@@ -711,11 +717,11 @@ Scope {
                         Layout.maximumWidth: parent.width * 0.6; visible: text.length > 0; elide: Text.ElideRight
                         text: root.message; color: root.messageError ? root.danger : root.muted; font.pixelSize: 13
                     }
-                    ActionButton { objectName: "puzzlesButton"; visible: !root.game && root.view === ""; theme: root; compact: true; icon: "◎"; label: "Puzzles"; hint: "z"; onClicked: root.view = "puzzles" }
-                    ActionButton { objectName: "openingsButton"; visible: !root.game && root.view === ""; theme: root; compact: true; icon: "♞"; label: "Openings"; hint: "o"; onClicked: root.view = "openings" }
-                    ActionButton { objectName: "profileButton"; visible: !root.game && root.view === ""; theme: root; compact: true; icon: "♔"; label: root.account ? root.account.username : "Profile"; hint: "p"; onClicked: root.view = "profile" }
-                    ActionButton { visible: !root.game; theme: root; compact: true; icon: "+"; label: "New window"; hint: "w"; onClicked: root.newWindow() }
-                    ActionButton { visible: !root.game; theme: root; objectName: "lobbyHelpButton"; compact: true; icon: "?"; label: "Help"; onClicked: root.helpVisible = true }
+                    ActionButton { objectName: "puzzlesButton"; visible: !root.game && root.view === ""; theme: root; compact: true; icon: "◎"; label: commandBar.narrow ? "" : "Puzzles"; hint: "z"; onClicked: root.view = "puzzles" }
+                    ActionButton { objectName: "openingsButton"; visible: !root.game && root.view === ""; theme: root; compact: true; icon: "♞"; label: commandBar.narrow ? "" : "Openings"; hint: "o"; onClicked: root.view = "openings" }
+                    ActionButton { objectName: "profileButton"; visible: !root.game && root.view === ""; theme: root; compact: true; icon: "♔"; label: commandBar.narrow ? "" : root.account ? root.account.username : "Profile"; hint: "p"; onClicked: root.view = "profile" }
+                    ActionButton { visible: !root.game && !commandBar.tiny; theme: root; compact: true; icon: "+"; label: commandBar.narrow ? "" : "New window"; hint: "w"; onClicked: root.newWindow() }
+                    ActionButton { visible: !root.game && !commandBar.narrow; theme: root; objectName: "lobbyHelpButton"; compact: true; icon: "?"; label: "Help"; onClicked: root.helpVisible = true }
                 }
             }
         }

@@ -56,12 +56,14 @@ ColumnLayout {
             readonly property real seconds: Math.max(0, (modelData === "white" ? tvBoard.tv.wc : tvBoard.tv.bc) - (toMove ? (tvBoard.app.clockNow - tvBoard.at) / 1000 : 0))
             Layout.preferredWidth: tvBoard.boardSize; spacing: 6
             Text { visible: !!info.user && !!info.user.title; text: info.user && info.user.title ? info.user.title : ""; color: tvBoard.app.mistakeColor; font { pixelSize: tvBoard.textSize; weight: Font.DemiBold } }
-            Text { elide: Text.ElideRight; Layout.maximumWidth: implicitWidth; Layout.minimumWidth: Math.min(implicitWidth, 160); Layout.fillWidth: true; text: (info.user ? info.user.name : info.ai ? "Stockfish level " + info.ai : "Anonymous") + (info.rating ? "  " + info.rating : ""); color: toMove ? tvBoard.app.fg : tvBoard.app.muted; font.pixelSize: tvBoard.textSize }
+            Text { elide: Text.ElideRight; Layout.maximumWidth: implicitWidth; Layout.minimumWidth: Math.min(implicitWidth, tvBoard.boardSize < 240 ? 60 : 160); Layout.fillWidth: true; text: (info.user ? info.user.name : info.ai ? "Stockfish level " + info.ai : "Anonymous") + (info.rating ? "  " + info.rating : ""); color: toMove ? tvBoard.app.fg : tvBoard.app.muted; font.pixelSize: tvBoard.textSize }
             // Pieces this player has captured and the material lead, like Lichess.
             Text {
                 objectName: "tvCaptured_" + modelData
                 readonly property var taken: tvBoard.app.captures(tvBoard.tv.fen)
                 readonly property int lead: modelData === "white" ? taken.lead : -taken.lead
+                // Small boards keep the name and clock; captures come back with room.
+                visible: tvBoard.boardSize >= 220
                 Layout.fillWidth: true; elide: Text.ElideRight
                 text: taken[modelData] + (lead > 0 ? " +" + lead : "")
                 color: tvBoard.app.muted; font { family: "DejaVu Sans"; pixelSize: tvBoard.textSize - 1 }
