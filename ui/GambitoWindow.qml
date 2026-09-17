@@ -492,6 +492,12 @@ Scope {
             ms = Math.max(0, ms - Math.max(0, clockNow - game.updated_ms));
         const secs = Math.ceil(ms / 1000);
         const pad = n => String(n).padStart(2, "0");
+        // Correspondence clocks read in days and hours, never as a wall clock: a day left is "1d 0h", not 24:00:00.
+        if (game.speed === "correspondence") {
+            if (secs >= 86400) return Math.floor(secs / 86400) + "d " + Math.floor(secs % 86400 / 3600) + "h";
+            if (secs >= 3600) return Math.floor(secs / 3600) + "h " + Math.floor(secs % 3600 / 60) + "m";
+            return Math.max(1, Math.floor(secs / 60)) + "m";
+        }
         if (secs >= 86400) return Math.floor(secs / 86400) + "d " + Math.floor(secs % 86400 / 3600) + "h";
         if (secs >= 3600) return Math.floor(secs / 3600) + ":" + pad(Math.floor(secs % 3600 / 60)) + ":" + pad(secs % 60);
         return Math.floor(secs / 60) + ":" + pad(secs % 60);

@@ -347,6 +347,12 @@ TEST = r'''
                 lichess_analysis: {moves: [{eval: 20}, {eval: 25}, {eval: -80, best: "b1c3", variation: "Nc3 Nf6 Bc4", judgment: {name: "Mistake", comment: "Mistake. Nc3 was best."}}],
                                    white: {accuracy: 85, inaccuracy: 2, mistake: 1, blunder: 1}, black: {accuracy: 71, inaccuracy: 3, mistake: 1, blunder: 3}}});
             root.games = root.games.concat([analysed]); root.choose("hist0001");
+            // Correspondence clocks read in days and hours, not as a wall clock.
+            root.games = root.games.filter(g => g.id !== "hist0001").concat([Object.assign({}, analysed, {speed: "correspondence", status: "started", connected: false, white_ms: 86_400_000, black_ms: 3_600_000 * 23 + 59_000})]);
+            compare(root.clock("white"), "1d 0h"); compare(root.clock("black"), "23h 0m");
+            root.games = root.games.filter(g => g.id !== "hist0001").concat([Object.assign({}, analysed, {speed: "rapid", status: "started", connected: false, white_ms: 3_600_000 + 61_000})]);
+            compare(root.clock("white"), "1:01:01");
+            root.games = root.games.filter(g => g.id !== "hist0001").concat([analysed]);
             root.positions = {game: "hist0001", plies: 3, fens: ["rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1",
                 "rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq - 0 1", "rnbqkbnr/pppp1ppp/8/4p3/4P3/8/PPPP1PPP/RNBQKBNR w KQkq - 0 2",
                 "rnbqkbnr/pppp1ppp/8/4p3/4P3/5N2/PPPP1PPP/RNBQKB1R b KQkq - 1 2"]};
