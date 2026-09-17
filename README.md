@@ -50,7 +50,7 @@ On Arch Linux (including Omarchy):
 
 ```sh
 sudo pacman -S --needed rust quickshell stockfish ttf-dejavu libnotify
-git clone <this repository> gambito && cd gambito
+git clone https://github.com/harbefas/gambito && cd gambito
 cargo build --release
 ./target/release/gambito open
 ```
