@@ -126,10 +126,15 @@ impl Api {
         let body: Value = response.json().await.unwrap_or_default();
         if status.as_u16() == 401 || status.as_u16() == 403 {
             // Tokens from before a scope was added keep their old permissions until the next login.
-            if let Some(scope) = body["error"].as_str().and_then(|e| e.strip_prefix("Missing scope: ")) {
+            if let Some(scope) = body["error"]
+                .as_str()
+                .and_then(|e| e.strip_prefix("Missing scope: "))
+            {
                 bail!("Lichess permission missing ({scope}): sign out and connect Lichess again");
             }
-            bail!("Auth/permission denied ({status}); check the token and board:play scope");
+            bail!(
+                "Auth/permission denied ({status}); connect Lichess again and grant the requested permissions"
+            );
         }
         bail!(
             "Lichess {status}: {}",
@@ -155,6 +160,20 @@ impl Api {
         Ok(Self::check(
             self.client
                 .get(format!("{}{path}", self.base))
+                .timeout(Duration::from_secs(25))
+                .send()
+                .await?,
+        )
+        .await?
+        .text()
+        .await?)
+    }
+    /// Authenticated PGN export for broadcast chapters.
+    pub async fn broadcast_pgn(&self, round: &str, chapter: &str) -> Result<String> {
+        Ok(Self::check(
+            self.client
+                .get(format!("{}/api/study/{round}/{chapter}.pgn", self.base))
+                .bearer_auth(&self.token)
                 .timeout(Duration::from_secs(25))
                 .send()
                 .await?,

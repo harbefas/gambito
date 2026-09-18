@@ -70,7 +70,8 @@ Every clickable control has a key, and buttons show it. In the app, `?` shows th
 | Page | Keys |
 |---|---|
 | Challenges | `u` username, `t` time, `c` color, `v` rated, `s` send, `j` `k` select, `a` accept, `x` decline or cancel, `r` refresh |
-| TV | `j` `k` channel, `o` or Enter open on board, `L` lichess.org, `z` zen |
+| TV | `b` tournaments, `j` `k` channel, `o` or Enter open on board, `L` lichess.org, `z` zen |
+| Tournaments (in TV) | `j` `k` select, Enter open, Backspace back, `r` refresh, `o` analysis copy, `L` lichess.org, `b` TV channels |
 | Openings | Arrows or `hjkl` pick, Enter play, Backspace or `u` back, `b` start, `a` analyse, `m` database, `s` `r` filters, `1` `2` tabs |
 | Puzzles | `[` `]` category, arrows or `hjkl` pick, Enter start, `d` difficulty |
 | Profile | `1`–`4` tabs, `j` `k` select, Enter open, `s` `r` `o` filters, `x` delete board, `l` sign out |

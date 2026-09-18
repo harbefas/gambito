@@ -158,6 +158,20 @@ class Handler(BaseHTTPRequestHandler):
             return self.stream(self.server.watch, {"id": "watch001", "speed": "blitz", "rated": True, "players": {"white": {"user": {"name": "José"}, "rating": 3000}, "black": {"aiLevel": 8}}})
         if self.path.startswith("/game/export/watch001?"):
             return self.json({"id": "watch001", "status": "mate", "winner": "white"})
+        if self.path == "/api/broadcast/top":
+            return self.json({"active": [{"tour": {"id": "tour0001", "name": "Test Invitational"}, "round": {"id": "round001", "name": "Round 1", "ongoing": True}}], "past": {"currentPageResults": []}})
+        if self.path == "/api/broadcast/noScope1":
+            return self.json({"error": "Missing scope: study:read"}, 403)
+        if self.path == "/api/broadcast/rate0001":
+            return self.json({"error": "Too many requests"}, 429)
+        if self.path == "/api/broadcast/tour0001":
+            return self.json({"tour": {"id": "tour0001", "name": "Test Invitational"}, "rounds": [{"id": "round001", "name": "Round 1", "ongoing": True}]})
+        if self.path == "/api/broadcast/-/-/round001":
+            return self.json({"tour": {"id": "tour0001", "name": "Test Invitational"}, "round": {"id": "round001", "name": "Round 1"}, "games": [{"id": "chapter1", "name": "Alpha - Beta", "players": [{"name": "Alpha", "clock": 12345}, {"name": "Beta"}], "status": "*"}]})
+        if self.path == "/api/study/round001/chapter1.pgn":
+            raw = b'[Event "Test Invitational"]\n[White "Alpha"]\n[Black "Beta"]\n[WhiteElo "2600"]\n[Result "*"]\n\n1. e4! {[%clk 1:30:00]} e5?! 2. Nf3?? (2. Bc4) Nc6 *'
+            self.send_response(200); self.send_header("Content-Type", "application/x-chess-pgn"); self.send_header("Content-Length", str(len(raw))); self.end_headers(); self.wfile.write(raw)
+            return
         if self.path == "/api/tv/channels":
             return self.json({"bullet": {"user": {"name": "KiKiKiRA", "title": "IM"}, "rating": 2827, "gameId": "t8siWVwF", "color": "white"},
                               "horde": {"user": {"name": "papa_reza"}, "rating": 1866, "gameId": "o5E0OrAR", "color": "white"}})
@@ -629,6 +643,21 @@ def main():
             m = state_game(master)
             assert (m["san"], m["white"], m["white_rating"]) == (["e4", "e5", "Nf3", "Nc6"], "Carlsen, M.", 2882), m
             c.call("delete", game=board); c.call("delete", game=master)
+            assert "study:read" in c.call("broadcast_tournament", id="noScope1")["error"]
+            assert "wait a minute" in c.call("broadcast_tournament", id="rate0001")["error"]
+            broadcasts = c.call("broadcasts")["data"]["broadcast"]
+            assert broadcasts["active"][0]["tour"]["id"] == "tour0001"
+            assert c.call("broadcast_tournament", id="tour0001")["data"]["broadcast"]["rounds"][0]["id"] == "round001"
+            assert c.call("broadcast_round", id="round001")["data"]["broadcast"]["games"][0]["id"] == "chapter1"
+            preview = c.call("broadcast_game", round="round001", chapter="chapter1")["data"]["broadcast_game"]
+            assert preview["san"] == ["e4", "e5", "Nf3", "Nc6"] and preview["white"] == "Alpha"
+            assert preview["analysis"] and not preview["online"]
+            assert not c.call("broadcast_round", id="../bad")["ok"]
+            assert not c.call("broadcast_game", round="round001", chapter="../bad")["ok"]
+            copied = c.call("broadcast_open", round="round001", chapter="chapter1")["data"]["game"]
+            snap = state_game(copied)
+            assert snap["analysis"] and snap["san"] == preview["san"] and not snap["online"], snap
+            c.call("delete", game=copied)
             channels = c.call("tv_channels")["data"]["tv_channels"]
             assert channels["bullet"]["gameId"] == "t8siWVwF" and "horde" in channels
             assert c.call("crosstable", a="Frogkiller", b="McBeast")["data"]["crosstable"]["nbGames"] == 42
@@ -723,7 +752,7 @@ def main():
             url = urlparse(c.call("login")["data"]["url"])
             query = {k: v[0] for k, v in parse_qs(url.query).items()}
             assert url.path == "/oauth" and query["code_challenge_method"] == "S256" and query["client_id"] == "gambito"
-            assert query["scope"] == "board:play challenge:read challenge:write puzzle:read puzzle:write"
+            assert query["scope"] == "board:play challenge:read challenge:write puzzle:read puzzle:write study:read"
             assert cli("status")["logging_in"]
             fake.challenge = query["code_challenge"]
             page = urlopen(query["redirect_uri"] + "?" + urlencode({"code": "test-code", "state": query["state"]})).read().decode()

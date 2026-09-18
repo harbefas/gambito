@@ -12,7 +12,7 @@ Flickable {
     required property Item focusScope
     anchors.fill: parent
     // Stacked in a narrow pane the panel doesn't fit under the board, so the page scrolls.
-    clip: true; contentWidth: width; contentHeight: page.height
+    clip: true; contentWidth: width; contentHeight: tournaments ? broadcastLoader.height : page.height
     boundsBehavior: Flickable.StopAtBounds
     ScrollBar.vertical: ScrollBar { }
 
@@ -21,6 +21,7 @@ Flickable {
         ["best", "Top rated", "♛"], ["bullet", "Bullet", "➹"], ["blitz", "Blitz", "ϟ"], ["rapid", "Rapid", "◷"],
         ["classical", "Classical", "♜"], ["ultraBullet", "UltraBullet", "»"], ["bot", "Bot", "⚙"], ["computer", "Computer", "⌬"]
     ]
+    property bool tournaments: false
     property var channels: ({})
     property string channel: "best"
     property var crosstable: null
@@ -53,9 +54,11 @@ Flickable {
             else if (cmd === "crosstable" && data) tvView.crosstable = data.crosstable;
         }
     }
-    Timer { interval: 20000; repeat: true; running: true; triggeredOnStart: true; onTriggered: tvView.app.send("tv_channels") }
+    Timer { interval: 20000; repeat: true; running: !tvView.tournaments; triggeredOnStart: true; onTriggered: tvView.app.send("tv_channels") }
     Component.onCompleted: {
         app.viewKeys = (key, event) => {
+            if (key === "b") { tvView.tournaments = !tvView.tournaments; return true; }
+            if (tvView.tournaments) return broadcastLoader.item ? broadcastLoader.item.handleKey(key, event) : false;
             if (key === "j" || event.key === Qt.Key_Down) tvView.select(tvView.index + 1);
             else if (key === "k" || event.key === Qt.Key_Up) tvView.select(tvView.index - 1);
             else if (key === "o" || event.key === Qt.Key_Return) tvView.analyse();
@@ -73,8 +76,20 @@ Flickable {
     // Narrow panes put the board above the panel instead of squeezing it off the edge.
     readonly property bool narrow: width < 700
 
+    Loader {
+        id: broadcastLoader
+        width: parent.width; height: Math.max(tvView.height, item ? item.implicitHeight : 0)
+        active: tvView.tournaments
+        sourceComponent: Component { BroadcastView { app: tvView.app; viewportHeight: tvView.height; onCloseRequested: tvView.tournaments = false } }
+    }
+    onTournamentsChanged: {
+        contentY = 0;
+        if (tournaments) { app.zen = false; follow(""); }
+    }
+
     GridLayout {
         id: page
+        visible: !tvView.tournaments
         width: tvView.width
         height: Math.max(tvView.height, implicitHeight)
         columns: tvView.narrow ? 1 : 2; columnSpacing: app.zen ? 0 : 20; rowSpacing: app.zen ? 0 : 12
@@ -86,13 +101,13 @@ Flickable {
                 id: board
                 objectName: "tvMainBoard"
                 anchors.centerIn: parent
-                app: tvView.app; channel: tvView.channel; textSize: 15
+                app: tvView.app; channel: tvView.channel; active: !tvView.tournaments; textSize: 15
                 // Two player rows (~30 px each) around the board.
                 boardSize: Math.max(160, Math.min(parent.height - 64, parent.width))
                 onActivated: tvView.analyse()
                 // New featured game: follow its moves and ask for the players' head-to-head score.
                 onTvChanged: {
-                    if (!tv || tv.id === tvView.watchedId) return;
+                    if (tvView.tournaments || !tv || tv.id === tvView.watchedId) return;
                     tvView.follow(tv.id);
                     const names = tv.players.map(p => p.user ? p.user.name : "");
                     if (names.length === 2 && names.every(n => n)) tvView.app.send("crosstable", {a: names[0], b: names[1]});
@@ -121,6 +136,7 @@ Flickable {
                     }
                     ActionButton { objectName: "tvZen"; theme: app; compact: true; icon: "⤢"; hint: "z"; onClicked: app.zen = true }
                 }
+                ActionButton { objectName: "tvTournaments"; Layout.fillWidth: true; theme: app; label: "Tournaments"; hint: "b"; onClicked: tvView.tournaments = true }
                 // Head-to-head score of the two players.
                 Rectangle {
                     Layout.fillWidth: true; implicitHeight: 34; radius: 10; color: app.bg; border.width: 1; border.color: app.line

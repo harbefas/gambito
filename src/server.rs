@@ -424,7 +424,7 @@ impl App {
                 ("code_challenge", &challenge),
                 (
                     "scope",
-                    "board:play challenge:read challenge:write puzzle:read puzzle:write",
+                    "board:play challenge:read challenge:write puzzle:read puzzle:write study:read",
                 ),
                 ("state", &state),
             ],
@@ -1150,6 +1150,57 @@ impl App {
                 }
                 Ok(json!({"explorer": data, "fen": fen, "db": db}))
             }
+            "broadcasts" | "broadcast_tournament" | "broadcast_round" => {
+                let cmd = req["cmd"].as_str().unwrap();
+                let key = req["id"].as_str().unwrap_or("");
+                let path = match cmd {
+                    "broadcasts" => "/api/broadcast/top".to_owned(),
+                    "broadcast_tournament" => {
+                        validate_id(key)?;
+                        format!("/api/broadcast/{key}")
+                    }
+                    _ => {
+                        validate_id(key)?;
+                        format!("/api/broadcast/-/-/{key}")
+                    }
+                };
+                let ttl = Duration::from_secs(if cmd == "broadcast_round" { 15 } else { 60 });
+                let data = self
+                    .cached(&path, ttl, async { self.any_api().await?.get(&path).await })
+                    .await?;
+                Ok(json!({"id": key, "broadcast": data}))
+            }
+            "broadcast_game" | "broadcast_open" => {
+                let round = req["round"].as_str().context("Missing broadcast round")?;
+                let chapter = req["chapter"].as_str().context("Missing broadcast game")?;
+                validate_id(round)?;
+                validate_id(chapter)?;
+                let path = format!("broadcast-pgn/{round}/{chapter}");
+                let data = self
+                    .cached(&path, Duration::from_secs(15), async {
+                        let pgn = self.any_api().await?.broadcast_pgn(round, chapter).await?;
+                        broadcast_game(&pgn)?.snapshot()
+                    })
+                    .await?;
+                if req["cmd"] == "broadcast_game" {
+                    return Ok(json!({"round": round, "chapter": chapter, "broadcast_game": data}));
+                }
+                let mut game: Game = serde_json::from_value(data)?;
+                let mut s = self.state.lock().await;
+                let mut n = now_ms();
+                while s.games.contains_key(&format!("analysis-{n}")) {
+                    n += 1;
+                }
+                game.id = format!("analysis-{n}");
+                let id = game.id.clone();
+                s.games.insert(id.clone(), game);
+                if let Err(e) = Self::save(&s) {
+                    s.games.remove(&id);
+                    return Err(e);
+                }
+                self.publish(&s);
+                Ok(json!({"game": id}))
+            }
             "tv_channels" => {
                 let channels = self
                     .cached("tv_channels", TV_CHANNELS_TTL, async {
@@ -1808,6 +1859,35 @@ fn apply_watch_event(games: &mut BTreeMap<String, Game>, id: &str, event: &Value
     Ok(false)
 }
 
+/// Broadcast chapters are spectator snapshots, never playable online games.
+fn broadcast_game(pgn: &str) -> Result<Game> {
+    let tag = |name: &str| {
+        pgn.lines().find_map(|line| {
+            line.trim()
+                .strip_prefix(&format!("[{name} \""))
+                .and_then(|v| v.strip_suffix("\"]"))
+                .map(str::to_owned)
+        })
+    };
+    if tag("White").is_none() && tag("Black").is_none() {
+        bail!("Broadcast returned no game PGN");
+    }
+    if tag("Variant").is_some_and(|v| v != "Standard" && v != "From Position") {
+        bail!("Only standard chess broadcasts are supported");
+    }
+    let mut game = Game::local("broadcast".into());
+    game.analysis = true;
+    game.white = tag("White").unwrap_or_else(|| "White".into());
+    game.black = tag("Black").unwrap_or_else(|| "Black".into());
+    game.white_rating = tag("WhiteElo").and_then(|v| v.parse().ok());
+    game.black_rating = tag("BlackElo").and_then(|v| v.parse().ok());
+    if let Some(fen) = tag("FEN") {
+        game.initial_fen = fen;
+    }
+    game.set_san_moves(&pgn_sans(pgn))?;
+    Ok(game)
+}
+
 /// SAN tokens of a PGN movetext: no tags, comments, variations, move numbers or result.
 fn pgn_sans(pgn: &str) -> String {
     let movetext: String = pgn
@@ -1831,7 +1911,12 @@ fn pgn_sans(pgn: &str) -> String {
                 && !t.starts_with('$')
                 && !matches!(*t, "1-0" | "0-1" | "1/2-1/2" | "*")
         })
-        .map(|t| t.rsplit('.').next().unwrap_or(t))
+        .map(|t| {
+            t.rsplit('.')
+                .next()
+                .unwrap_or(t)
+                .trim_end_matches(['!', '?'])
+        })
         .filter(|t| !t.is_empty())
         .collect::<Vec<_>>()
         .join(" ")
@@ -2161,6 +2246,24 @@ fn random_token() -> Result<String> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn broadcast_pgn_snapshot() {
+        let game = broadcast_game("[White \"Alpha\"]\n[Black \"Beta\"]\n[WhiteElo \"2600\"]\n\n1. e4! {[%clk 1:30:00]} e5?! 2. Nf3?? (2. Bc4 Nf6) Nc6 *").unwrap();
+        assert!(game.analysis && !game.online);
+        assert_eq!(
+            game.snapshot().unwrap()["san"],
+            json!(["e4", "e5", "Nf3", "Nc6"])
+        );
+        assert_eq!(game.white_rating, Some(2600));
+        assert!(broadcast_game("<html>Unavailable</html>").is_err());
+        assert!(broadcast_game("[White \"A\"]\n[Variant \"Atomic\"]\n").is_err());
+        let setup = broadcast_game(
+            "[White \"A\"]\n[Black \"B\"]\n[FEN \"7k/8/8/8/8/8/8/K7 w - - 0 20\"]\n\n20. Kb1 *",
+        )
+        .unwrap();
+        assert_eq!(setup.moves, ["a1b1"]);
+    }
+
     #[test]
     fn pgn_movetext_to_sans() {
         let pgn = "[Event \"x\"]\n[White \"Carlsen, M.\"]\n\n1. e4 {book} e5 2. Nf3 (2. Bc4 Nf6) 2... Nc6 $1 3.Bb5 1/2-1/2";

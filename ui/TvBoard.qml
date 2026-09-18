@@ -6,6 +6,7 @@ import QtQuick.Layouts
 ColumnLayout {
     id: tvBoard
     required property var app
+    property bool active: true
     property real boardSize: 240
     property string channel: ""          // "" = featured game, else a /api/tv/channels key
     property int textSize: 12
@@ -18,7 +19,11 @@ ColumnLayout {
     readonly property bool streaming: !!tv
     spacing: 6
 
-    function watch() { tv = null; failed = false; app.tvOwner = tvBoard; app.send("tv_watch", channel ? {channel: channel} : {}); }
+    function watch() { if (!active) return; tv = null; failed = false; app.tvOwner = tvBoard; app.send("tv_watch", channel ? {channel: channel} : {}); }
+    onActiveChanged: {
+        if (active) watch();
+        else if (app.tvOwner === tvBoard) { app.tvOwner = null; app.send("tv_stop"); tv = null; }
+    }
     onChannelChanged: watch()
     Component.onCompleted: watch()
     Component.onDestruction: if (app.tvOwner === tvBoard) { app.tvOwner = null; if (app.daemonConnected) app.send("tv_stop"); }
@@ -26,6 +31,7 @@ ColumnLayout {
     Connections {
         target: tvBoard.app
         function onTvEvent(event, error) {
+            if (!tvBoard.active || tvBoard.app.tvOwner !== tvBoard) return;
             if (error || !event) { tvBoard.failed = true; return; }
             const d = event.d;
             if (event.t === "featured") {

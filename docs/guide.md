@@ -79,6 +79,16 @@ When you're signed in, puzzles come from your account and each result is sent to
 
 `t` opens every TV channel: Top rated, Bullet, Blitz, Rapid, Classical, UltraBullet, Bot and Computer. You get a large live board, the players' head-to-head score and the move list. `j`/`k` switch channels, `o` or Enter opens the game on Gambito's own board (as a spectator; the engine and analysis boards work), and `L` opens it on lichess.org. The stream replays the game from the start and continues live to the result.
 
+### Tournament broadcasts
+
+In TV, press `b` or click **Tournaments** to browse live and recent events. Use `j`/`k` and Enter to open a tournament, round, then game; Backspace goes up one level. `b` returns to TV channels. Broadcasts remain separate from your games.
+
+Boards and the selected game's move history refresh every 15 seconds while the page is open. Clocks show the source's last reported reading; missing clocks appear as a dash. Results appear beside each game. `r` refreshes, and `L` opens the current event or game on Lichess. An error preserves the last loaded boards and pauses automatic retries for a minute.
+
+Press `o` or click **Open analysis copy** to create a local analysis board with the game's main line. This is a snapshot; it does not continue following the broadcast. Standard chess and standard positions are supported.
+
+Tournament details use Lichess's `study:read` permission. If Lichess reports a missing permission, sign out and connect again to grant it. The tournament directory itself is public.
+
 ## Profile
 
 `p` opens your profile: member since, play time and results, ratings per speed with a history chart and stats (peak, lowest, best win, worst loss, streaks).

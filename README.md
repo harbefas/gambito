@@ -27,7 +27,7 @@ Gambito brings Lichess to your desktop the way the rest of your setup already wo
 
 | Play | Study | Watch |
 |---|---|---|
-| Seek opponents (Rapid, Classical, correspondence) | Stockfish evaluation with depth control | Lichess TV: every channel, live clocks |
+| Seek opponents (Rapid, Classical, correspondence) | Stockfish evaluation with depth control | Lichess TV and tournament broadcasts |
 | Lichess AI levels 1–8 | Lichess computer analysis per move | Open any TV game on your own board |
 | Challenges, chat and takebacks | Opening explorer (Masters and Lichess) | Profile: ratings chart, history, accuracy |
 | Local two-player games | Puzzle of the day and every puzzle theme | News from the Lichess blog |
