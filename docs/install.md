@@ -76,7 +76,7 @@ hl.window_rule({ name = "gambito", match = { class = "^gambito$" }, workspace = 
 
 ## Sign in to Lichess
 
-Press **Connect Lichess** (`l`) or run `:login` in a window. Gambito uses OAuth with PKCE in your browser and asks only for `board:play`, `challenge:read`, `challenge:write`, `puzzle:read` and `puzzle:write`. Sign out from the profile (`l`, then Enter) or with `:logout`.
+Press **Connect Lichess** (`l`) or run `:login` in a window. Gambito uses OAuth with PKCE in your browser and asks only for `board:play`, `challenge:read`, `challenge:write`, `puzzle:read`, `puzzle:write` and `study:read` (tournament details). Sign out from the profile (`l`, then Enter) or with `:logout`.
 
 To use a personal token instead, create one at <https://lichess.org/account/oauth/token/create> with the same scopes and pipe it in:
 
