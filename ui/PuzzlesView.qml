@@ -59,15 +59,18 @@ GridLayout {
     }
     Component.onDestruction: if (app.viewKeys) app.viewKeys = null
 
+    PageHeader {
+        Layout.columnSpan: puzzles.narrow ? 1 : 2
+        theme: puzzles.app
+        title: "Puzzles"
+        subtitle: "Practice tactical themes and build pattern recognition."
+        onBackRequested: puzzles.app.navigateBack()
+    }
+
     ColumnLayout {
         // Narrow and fixed beside the cards; a short row above them in a narrow pane.
         Layout.preferredWidth: puzzles.narrow ? -1 : 170; Layout.maximumWidth: puzzles.narrow ? 100000 : 170
         Layout.fillWidth: puzzles.narrow; Layout.fillHeight: !puzzles.narrow; spacing: 10
-        RowLayout {
-            spacing: 10
-            ActionButton { objectName: "puzzlesBack"; theme: app; compact: true; icon: "←"; hint: "⌫"; onClicked: app.navigateBack() }
-            Text { text: "Puzzles"; color: app.fg; font { pixelSize: 18; weight: Font.DemiBold } }
-        }
         ListView {
             id: categoryList
             objectName: "puzzleCategories"
