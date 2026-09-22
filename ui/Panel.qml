@@ -1,5 +1,4 @@
 import QtQuick
-import QtQuick.Layouts
 
 Rectangle {
     id: panel
@@ -10,11 +9,9 @@ Rectangle {
     color: theme.panel
     border.width: 1
     border.color: theme.line
-    ColumnLayout {
+    Item {
         id: body
         anchors.fill: parent
         anchors.margins: panel.padding
-        spacing: 10
     }
 }
-

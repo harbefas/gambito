@@ -177,8 +177,9 @@ Flickable {
         }
         GridLayout {
             Layout.fillWidth: true; Layout.fillHeight: true; columns: root.narrow ? 1 : 2; columnSpacing: 12; rowSpacing: 12
-            Rectangle {
-                Layout.fillWidth: true; Layout.fillHeight: true; Layout.preferredWidth: root.narrow ? 0 : 410; radius: 14; color: app.panel; border.color: app.line
+            Panel {
+                theme: root.app
+                Layout.fillWidth: true; Layout.fillHeight: true; Layout.preferredWidth: root.narrow ? 0 : 410
                 ColumnLayout { anchors.fill: parent; anchors.margins: 14; spacing: 10
                     RowLayout { Layout.fillWidth: true
                         ColumnLayout { Layout.fillWidth: true; spacing: 1
@@ -211,8 +212,9 @@ Flickable {
                     }
                 }
             }
-            Rectangle {
-                Layout.fillWidth: true; Layout.fillHeight: true; Layout.preferredWidth: root.narrow ? 0 : 340; radius: 14; color: app.panel; border.color: app.line
+            Panel {
+                theme: root.app
+                Layout.fillWidth: true; Layout.fillHeight: true; Layout.preferredWidth: root.narrow ? 0 : 340
                 ColumnLayout { anchors.fill: parent; anchors.margins: 14; spacing: 10
                     Text { text: "Import and export"; color: app.fg; font { pixelSize: 16; weight: Font.DemiBold } }
                     Text { Layout.fillWidth: true; text: "Bring in a PGN or save one of your chapters for use elsewhere."; color: app.muted; wrapMode: Text.Wrap; font.pixelSize: 12 }
@@ -242,7 +244,7 @@ Flickable {
         }
         GridLayout {
             Layout.fillWidth: true; Layout.fillHeight: true; columns: root.narrow ? 1 : 2; columnSpacing: 12; rowSpacing: 12
-            Rectangle { Layout.fillWidth: true; Layout.fillHeight: true; Layout.preferredWidth: root.narrow ? 0 : 500; radius: 14; color: app.panel; border.color: app.line
+            Panel { theme: root.app; Layout.fillWidth: true; Layout.fillHeight: true; Layout.preferredWidth: root.narrow ? 0 : 500
                 StudyBoard {
                     id: studyBoard
                     anchors.centerIn: parent
@@ -252,7 +254,7 @@ Flickable {
                     onSquareClicked: square => { root.focusScope.forceActiveFocus(); root.selectStudySquare(square); }
                 }
             }
-            Rectangle { Layout.fillWidth: true; Layout.fillHeight: true; Layout.preferredWidth: root.narrow ? 0 : 360; radius: 14; color: app.panel; border.color: app.line
+            Panel { theme: root.app; Layout.fillWidth: true; Layout.fillHeight: true; Layout.preferredWidth: root.narrow ? 0 : 360
                 ColumnLayout { anchors.fill: parent; anchors.margins: 16; spacing: 10
                     Text { Layout.fillWidth: true; text: root.nodeData() ? (root.nodeData().san ? "After " + root.nodeData().san : "Starting position") : ""; color: app.fg; font.pixelSize: 16; font.weight: Font.DemiBold }
                     Text { Layout.fillWidth: true; text: root.nodeData() ? root.nodeData().comment || "No note yet." : ""; color: app.muted; wrapMode: Text.Wrap }
@@ -290,7 +292,7 @@ Flickable {
         }
     }
 
-    Rectangle { visible: mode === "session"; Layout.fillWidth: true; Layout.preferredHeight: 300; Layout.minimumHeight: 260; radius: 14; color: app.panel; border.color: app.line
+    Panel { visible: mode === "session"; theme: root.app; Layout.fillWidth: true; Layout.preferredHeight: 300; Layout.minimumHeight: 260
         ColumnLayout { anchors.centerIn: parent; width: Math.min(parent.width - 36, 460); spacing: 12
             Text { Layout.fillWidth: true; text: "Review session"; color: app.fg; font { pixelSize: 22; weight: Font.DemiBold } horizontalAlignment: Text.AlignHCenter }
             Text { Layout.fillWidth: true; text: session ? "Position " + Math.min(sessionIndex + 1, session.items.length) + " / " + session.items.length : "Preparing your queue…"; color: app.muted; horizontalAlignment: Text.AlignHCenter }

@@ -211,11 +211,11 @@ ColumnLayout {
     GridLayout {
         Layout.fillWidth: true; Layout.fillHeight: true
         columns: root.narrow || !root.selected ? 1 : 2; columnSpacing: 18; rowSpacing: 12
-        Rectangle {
+        Panel {
+            theme: root.app
             Layout.fillWidth: true; Layout.fillHeight: true; Layout.minimumHeight: 220
             Layout.preferredWidth: root.selected ? 330 : 700
             Layout.preferredHeight: root.narrow && root.selected ? 220 : 430
-            color: app.panel; radius: 12; border.color: app.line
             ListView {
                 id: list
                 objectName: "broadcastList"
