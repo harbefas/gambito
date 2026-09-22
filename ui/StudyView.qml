@@ -142,18 +142,18 @@ Flickable {
         height: Math.max(root.height, root.narrow ? 760 : 620)
         spacing: 14
 
-    RowLayout {
+    PageHeader {
         Layout.topMargin: 4
-        Layout.fillWidth: true
-        spacing: 10
-        ActionButton { objectName: "studyBack"; theme: app; compact: true; label: "Back"; hint: "⌫"; onClicked: root.back() }
-        ColumnLayout {
-            Layout.fillWidth: true; spacing: 1
-            Text { text: mode === "library" ? "Study" : mode === "session" ? "Review session" : chapter ? chapter.title : "Study"; color: app.fg; font { pixelSize: 23; weight: Font.DemiBold } }
-            Text { text: mode === "library" ? "Build lines, annotate ideas and review them over time." : mode === "session" ? "A focused queue from your saved positions." : chapter ? chapter.tags : ""; color: app.muted; font.pixelSize: 12; elide: Text.ElideRight }
-        }
-        ActionButton { visible: mode === "library"; theme: app; compact: true; label: "Examples"; hint: root.narrow ? "" : "e"; onClicked: send("study_examples") }
-        ActionButton { visible: mode === "library" && library && library.due.length > 0; theme: app; compact: true; label: "Start review"; hint: root.narrow ? "" : "s"; onClicked: startSession() }
+        theme: root.app
+        title: mode === "library" ? "Study" : mode === "session" ? "Review session" : chapter ? chapter.title : "Study"
+        subtitle: mode === "library" ? "Build lines, annotate ideas and review them over time." : mode === "session" ? "A focused queue from your saved positions." : chapter ? chapter.tags : ""
+        secondaryLabel: mode === "library" ? "Examples" : ""
+        secondaryHint: root.narrow ? "" : "e"
+        primaryLabel: mode === "library" && library && library.due.length > 0 ? "Start review" : ""
+        primaryHint: root.narrow ? "" : "s"
+        onBackRequested: root.back()
+        onSecondaryRequested: root.send("study_examples")
+        onPrimaryRequested: root.startSession()
     }
 
     Text { Layout.fillWidth: true; visible: !!error; text: error; color: error.includes("Good") || error.includes("saved") ? app.winColor : app.danger; wrapMode: Text.Wrap }

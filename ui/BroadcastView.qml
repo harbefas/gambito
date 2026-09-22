@@ -173,14 +173,18 @@ ColumnLayout {
     Component.onDestruction: stop()
     Timer { interval: 60000; running: root.app.daemonConnected; repeat: true; onTriggered: root.refresh() }
 
-    Flow {
-        Layout.fillWidth: true; spacing: 6
-        ActionButton { objectName: "broadcastBack"; theme: app; compact: true; label: "Back"; hint: "⌫"; onClicked: app.navigateBack() }
-        ActionButton { objectName: "broadcastRefresh"; theme: app; compact: true; label: "Refresh"; hint: "r"; enabled: !root.busy && app.clockNow >= root.retryAt; opacity: enabled ? 1 : 0.4; onClicked: { root.refresh(); if (root.round && !root.liveConnected) root.follow(); } }
-        ActionButton { theme: app; compact: true; label: "Lichess"; hint: "L"; onClicked: root.external() }
+    PageHeader {
+        theme: root.app
+        title: root.title
+        subtitle: root.tournament ? root.tournament.tour.name : "Live tournament broadcast"
+        secondaryLabel: "Refresh"
+        secondaryHint: "r"
+        primaryLabel: "Lichess"
+        primaryHint: "L"
+        onBackRequested: root.back()
+        onSecondaryRequested: { root.refresh(); if (root.round && !root.liveConnected) root.follow(); }
+        onPrimaryRequested: root.external()
     }
-    Text { Layout.fillWidth: true; text: root.title; textFormat: Text.PlainText; wrapMode: Text.Wrap; color: app.fg; font { pixelSize: 22; weight: Font.DemiBold } }
-    Text { Layout.fillWidth: true; visible: !!root.tournament; text: root.tournament ? root.tournament.tour.name : ""; textFormat: Text.PlainText; wrapMode: Text.Wrap; color: app.muted; font.pixelSize: 12 }
     Text { Layout.fillWidth: true; text: root.busy ? "Loading…" : !app.daemonConnected ? "Disconnected — waiting to reconnect…" : root.error || (root.round ? (root.liveError || (root.liveConnected ? "Live connection · moves update as received" : "Connecting to live broadcast…")) : "Live and recent broadcasts · j/k select · Enter open"); textFormat: Text.PlainText; wrapMode: Text.Wrap; color: root.error ? app.danger : app.muted; font.pixelSize: 12 }
     Text {
         Layout.fillWidth: true; visible: !!root.round; wrapMode: Text.Wrap
