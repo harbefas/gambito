@@ -199,7 +199,15 @@ Flickable {
                             }
                             MouseArea { anchors.fill: parent; onClicked: { chapterList.currentIndex = index; root.openChapter(modelData.id); } }
                         }
-                        Text { anchors.centerIn: parent; visible: !root.library || root.library.chapters.length === 0; text: "No chapters yet.\nUse Examples to start a library."; horizontalAlignment: Text.AlignHCenter; color: app.muted; lineHeight: 1.25 }
+                        EmptyState {
+                            anchors.centerIn: parent
+                            visible: !root.library || root.library.chapters.length === 0
+                            theme: root.app
+                            title: "No chapters yet"
+                            detail: "Create a line or load the starter examples to begin studying."
+                            action: "Load examples"
+                            onActivated: root.send("study_examples")
+                        }
                     }
                 }
             }

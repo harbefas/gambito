@@ -234,7 +234,16 @@ ColumnLayout {
                     }
                     MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: root.open(parent.index) }
                 }
-                Text { anchors.centerIn: parent; width: parent.width - 20; horizontalAlignment: Text.AlignHCenter; wrapMode: Text.Wrap; visible: !root.busy && !root.rows.length; text: root.error ? "Use Refresh to try again." : (root.round && root.games.length ? "No games match this filter." : "No broadcasts or games available yet."); color: app.muted; font.pixelSize: 13 }
+                EmptyState {
+                    anchors.centerIn: parent
+                    visible: !root.busy && !root.rows.length
+                    width: parent.width - 20
+                    theme: root.app
+                    title: root.error ? "Unable to load broadcasts" : root.round && root.games.length ? "No games match this filter" : "No broadcasts available"
+                    detail: root.error ? "Try refreshing the feed." : root.round && root.games.length ? "Choose another status filter to see more games." : "Refresh to check for new tournaments."
+                    action: "Refresh"
+                    onActivated: root.refresh()
+                }
             }
         }
         ColumnLayout {
