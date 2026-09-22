@@ -39,11 +39,14 @@ ColumnLayout {
         target: app
         function onChallengesChanged() { view.selected = Math.max(0, Math.min(view.selected, app.challenges.length - 1)); }
     }
-    RowLayout {
-        Layout.fillWidth: true
-        ActionButton { theme: app; label: "Back"; hint: "⌫"; onClicked: app.navigateBack() }
-        Text { Layout.fillWidth: true; text: "Challenges"; color: app.fg; font.pixelSize: 24 }
-        ActionButton { theme: app; label: "Refresh"; hint: "r"; onClicked: app.send("challenges") }
+    PageHeader {
+        theme: view.app
+        title: "Challenges"
+        subtitle: app.account ? "Send and manage real-time game invitations." : "Connect Lichess to send and receive challenges."
+        primaryLabel: "Refresh"
+        primaryHint: "r"
+        onBackRequested: app.navigateBack()
+        onPrimaryRequested: app.send("challenges")
     }
     Text { Layout.fillWidth: true; wrapMode: Text.WordWrap; text: app.account ? "Standard chess · Blitz, Rapid, Classical or correspondence. Real-time invitations expire after 20 seconds." : "Connect Lichess to send and receive challenges."; color: app.muted }
     ActionButton { visible: !app.account; theme: app; label: "Connect Lichess"; hint: ":login"; onClicked: app.send("login") }
