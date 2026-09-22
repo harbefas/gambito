@@ -168,14 +168,10 @@ Flickable {
                     {label: "Today", value: root.library ? root.library.stats.today : "—", detail: "reviews completed"},
                     {label: "Library", value: root.library ? root.library.chapters.length : "—", detail: "chapters saved"}
                 ]
-                delegate: Rectangle {
+                delegate: StatCard {
                     required property var modelData
-                    width: root.narrow ? (root.width - 8) / 2 : 170; height: 72; radius: 12; color: app.panel; border.color: app.line
-                    Column { anchors.fill: parent; anchors.margins: 11; spacing: 2
-                        Text { text: modelData.label; color: app.muted; font.pixelSize: 11 }
-                        Text { text: modelData.value; color: app.fg; font { pixelSize: 21; weight: Font.DemiBold } }
-                        Text { text: modelData.detail; color: app.muted; font.pixelSize: 10 }
-                    }
+                    theme: root.app; width: root.narrow ? (root.width - 8) / 2 : 170
+                    label: modelData.label; value: modelData.value; detail: modelData.detail
                 }
             }
         }

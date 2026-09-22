@@ -39,6 +39,7 @@ ColumnLayout {
         const value = gameState(game);
         return value === "finished" ? "Finished · " + game.status : value === "playing" ? "In progress" : "Awaiting first move";
     }
+    function statusTone(game) { const value = gameState(game); return value === "playing" ? "live" : value === "finished" ? "muted" : "muted"; }
     function count(value) { return games.filter(g => gameState(g) === value).length; }
     function filter(value) { gameFilter = value; index = 0; }
     function follow() {
@@ -225,9 +226,10 @@ ColumnLayout {
                     Column {
                         anchors { fill: parent; margins: 9 } spacing: 5
                         Text { width: parent.width; elide: Text.ElideRight; textFormat: Text.PlainText; text: modelData.tour ? modelData.tour.name : modelData.name || "Game"; color: app.fg; font.pixelSize: 13 }
-                        Text {
-                            width: parent.width; elide: Text.ElideRight; textFormat: Text.PlainText; color: app.muted; font.pixelSize: 11
-                            text: root.round ? root.statusText(modelData) : ((modelData.round || modelData).ongoing ? "Live · " : (modelData.round || modelData).finished ? "Finished · " : "Scheduled · ") + (modelData.round ? modelData.round.name : "Enter to view games")
+                        StatusBadge {
+                            theme: root.app
+                            label: root.round ? root.statusText(modelData) : ((modelData.round || modelData).ongoing ? "Live" : (modelData.round || modelData).finished ? "Finished" : "Scheduled")
+                            tone: root.round ? root.statusTone(modelData) : ((modelData.round || modelData).ongoing ? "live" : "muted")
                         }
                     }
                     MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: root.open(parent.index) }
