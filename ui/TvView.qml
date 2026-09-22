@@ -57,11 +57,11 @@ Flickable {
     Timer { interval: 20000; repeat: true; running: !tvView.tournaments; triggeredOnStart: true; onTriggered: tvView.app.send("tv_channels") }
     Component.onCompleted: {
         app.viewKeys = (key, event) => {
-            if (key === "b") { tvView.tournaments = !tvView.tournaments; return true; }
             if (tvView.tournaments) return broadcastLoader.item ? broadcastLoader.item.handleKey(key, event) : false;
-            if (key === "j" || event.key === Qt.Key_Down) tvView.select(tvView.index + 1);
+            if (key === "b") tvView.tournaments = true;
+            else if (key === "j" || event.key === Qt.Key_Down) tvView.select(tvView.index + 1);
             else if (key === "k" || event.key === Qt.Key_Up) tvView.select(tvView.index - 1);
-            else if (key === "o" || event.key === Qt.Key_Return) tvView.analyse();
+            else if ((event.key === Qt.Key_Return || event.key === Qt.Key_Enter)) tvView.analyse();
             else if (key === "z") tvView.app.zen = !tvView.app.zen;
             else if (key === "L") tvView.openLichess();
             else return false;
@@ -128,7 +128,7 @@ Flickable {
                 anchors { fill: parent; margins: 14 } spacing: 10
                 RowLayout {
                     Layout.fillWidth: true; spacing: 10
-                    ActionButton { objectName: "tvBack"; theme: app; compact: true; icon: "←"; hint: "g"; onClicked: app.view = "" }
+                    ActionButton { objectName: "tvBack"; theme: app; compact: true; icon: "←"; hint: "⌫"; onClicked: app.navigateBack() }
                     Column {
                         Layout.fillWidth: true; spacing: 1
                         Text { width: parent.width; elide: Text.ElideRight; text: "Lichess TV · " + tvView.channelInfo[tvView.index][1]; color: app.fg; font { pixelSize: 15; weight: Font.DemiBold } }
@@ -219,7 +219,7 @@ Flickable {
                 }
                 RowLayout {
                     Layout.fillWidth: true; spacing: 6
-                    ActionButton { objectName: "tvAnalyse"; Layout.fillWidth: true; theme: app; compact: true; icon: "⤢"; label: "Open on board"; hint: "o"; enabled: board.streaming; opacity: enabled ? 1 : 0.4; onClicked: tvView.analyse() }
+                    ActionButton { objectName: "tvAnalyse"; Layout.fillWidth: true; theme: app; compact: true; icon: "⤢"; label: "Open on board"; hint: "↵"; enabled: board.streaming; opacity: enabled ? 1 : 0.4; onClicked: tvView.analyse() }
                     ActionButton { theme: app; compact: true; icon: "↗"; hint: "L"; enabled: board.streaming; opacity: enabled ? 1 : 0.4; onClicked: tvView.openLichess() }
                 }
             }

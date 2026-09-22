@@ -34,6 +34,7 @@ struct State {
 }
 pub struct App {
     state: Mutex<State>,
+    studies: Mutex<crate::study::Library>,
     api: RwLock<Option<Api>>,
     tx: broadcast::Sender<Value>,
     streams: Mutex<BTreeMap<String, JoinHandle<()>>>,
@@ -848,6 +849,57 @@ impl App {
     ) -> Result<Value> {
         let id = req["game"].as_str().unwrap_or("");
         match req["cmd"].as_str().unwrap_or("") {
+            "study_analyse" => {
+                let fen = {
+                    let studies = self.studies.lock().await;
+                    studies.chapter(req["chapter"].as_str().context("Choose a chapter")?)?.nodes.get(req["node"].as_u64().unwrap_or(0) as usize).context("Position not found")?.fen.clone()
+                };
+                let mut s = self.state.lock().await;
+                let mut n = now_ms();
+                while s.games.contains_key(&format!("analysis-{n}")) {n += 1;}
+                let id = format!("analysis-{n}");
+                s.games.insert(id.clone(), Game::analysis_fen(id.clone(), &fen)?);
+                if let Err(e) = Self::save(&s) {s.games.remove(&id);return Err(e);}
+                self.publish(&s);
+                Ok(json!({"game":id}))
+            }
+            "study_eval" => {
+                let (fen, previous_fen) = {
+                    let studies = self.studies.lock().await;
+                    let chapter = studies.chapter(req["chapter"].as_str().context("Choose a chapter")?)?;
+                    let node = req["node"].as_u64().unwrap_or(0) as usize;
+                    let current = chapter.nodes.get(node).context("Position not found")?;
+                    let previous = current.parent.and_then(|parent| chapter.nodes.get(parent)).map(|n| n.fen.clone());
+                    (current.fen.clone(), previous)
+                };
+                let api = self.api.read().await.clone();
+                let eval = tokio::time::timeout(Duration::from_secs(25), self.engine.eval(&fen, api.clone(), 14, |_| {})).await.context("Analysis timed out; try again")??;
+                let previous_eval = if let Some(previous_fen) = previous_fen {
+                    Some(tokio::time::timeout(Duration::from_secs(25), self.engine.eval(&previous_fen, api, 14, |_| {})).await.context("Previous position analysis timed out; try again")??)
+                } else { None };
+                Ok(json!({"evaluation":eval, "previous_evaluation":previous_eval, "node":req["node"], "chapter_id":req["chapter"]}))
+            }
+            cmd if cmd.starts_with("study_") => {
+                let captured = if cmd == "study_capture" {
+                    let s = self.state.lock().await;
+                    let game = s.games.get(id).context("Open a game first")?;
+                    if game.engine_blocked(s.account.as_ref().and_then(|a|a["username"].as_str())) || (game.puzzle.is_some() && game.status == "started") {
+                        bail!("Finish the game or puzzle before saving it for study");
+                    }
+                    Some(game.clone())
+                } else {None};
+                let mut studies = self.studies.lock().await;
+                let before = studies.clone();
+                let result = if let Some(game) = captured {
+                    studies.capture(&game, req["ply"].as_u64().unwrap_or(0) as usize, req["book"].as_str().unwrap_or(""))
+                } else {studies.handle(&req)};
+                let result = result.and_then(|value| {
+                    if !matches!(cmd, "study_list" | "study_get" | "study_try" | "study_export") {studies.save(&crate::data_dir().join("studies.json"))?;}
+                    Ok(value)
+                });
+                if result.is_err() {*studies=before;}
+                result
+            }
             "status" => Ok(Self::snapshot(&*self.state.lock().await)),
             "list" => Ok(Self::snapshot(&*self.state.lock().await)["games"].clone()),
             "login" => Ok(json!({"url": self.start_login().await?})),
@@ -1860,7 +1912,7 @@ fn apply_watch_event(games: &mut BTreeMap<String, Game>, id: &str, event: &Value
 }
 
 /// Broadcast chapters are spectator snapshots, never playable online games.
-fn broadcast_game(pgn: &str) -> Result<Game> {
+pub(crate) fn broadcast_game(pgn: &str) -> Result<Game> {
     let tag = |name: &str| {
         pgn.lines().find_map(|line| {
             line.trim()
@@ -1889,7 +1941,7 @@ fn broadcast_game(pgn: &str) -> Result<Game> {
 }
 
 /// SAN tokens of a PGN movetext: no tags, comments, variations, move numbers or result.
-fn pgn_sans(pgn: &str) -> String {
+pub(crate) fn pgn_sans(pgn: &str) -> String {
     let movetext: String = pgn
         .lines()
         .filter(|l| !l.starts_with('['))
@@ -2068,13 +2120,14 @@ async fn tv_feed(
 
 async fn client(app: Arc<App>, stream: UnixStream) -> Result<()> {
     let (read, mut write) = stream.into_split();
-    let mut reader = FramedRead::new(read, LinesCodec::new_with_max_length(16_384));
+    let mut reader = FramedRead::new(read, LinesCodec::new_with_max_length(12_000_000));
     let mut events = app.tx.subscribe();
     let (progress_tx, mut progress_rx) = tokio::sync::watch::channel(None::<Value>);
     let (reply_tx, mut reply_rx) = tokio::sync::mpsc::channel(16);
     let mut analysis: Option<(Value, AbortTask)> = None;
     // Lichess TV feed for this connection's lobby; dropping it closes the HTTP stream.
     let mut _tv: Option<AbortTask> = None;
+    let mut _broadcast: Option<AbortTask> = None;
     let initial = App::snapshot(&*app.state.lock().await);
     write.write_all(format!("{initial}\n").as_bytes()).await?;
     loop {
@@ -2085,7 +2138,27 @@ async fn client(app: Arc<App>, stream: UnixStream) -> Result<()> {
                 match req {
                     Ok(req) => {
                         let id = req["request_id"].clone();
-                        if matches!(req["cmd"].as_str(), Some("tv_watch" | "tv_stop")) {
+                        if matches!(req["cmd"].as_str(), Some("broadcast_watch" | "broadcast_stop")) {
+                            let round = req["round"].as_str().unwrap_or("");
+                            let valid = if req["cmd"] == "broadcast_stop" { Ok(()) } else { validate_id(round) };
+                            match valid {
+                                Err(e) => json!({"type":"reply", "request_id":id, "ok":false, "error":format!("{e:#}")}),
+                                Ok(()) => {
+                                    _broadcast = None;
+                                    if req["cmd"] == "broadcast_watch" {
+                                        let app = app.clone();
+                                        let replies = reply_tx.clone();
+                                        let round = round.to_owned();
+                                        let subscription = id.clone();
+                                        _broadcast = Some(AbortTask(tokio::spawn(async move {
+                                            let api = app.any_api().await?;
+                                            crate::broadcast::feed(api, replies, round, subscription).await
+                                        })));
+                                    }
+                                    json!({"type":"reply", "request_id":id, "ok":true, "data":null})
+                                }
+                            }
+                        } else if matches!(req["cmd"].as_str(), Some("tv_watch" | "tv_stop")) {
                             // One feed per connection: watching another channel replaces the previous stream.
                             let path = match req["channel"].as_str() {
                                 None => Ok("/api/tv/feed".to_owned()),
@@ -2098,7 +2171,7 @@ async fn client(app: Arc<App>, stream: UnixStream) -> Result<()> {
                                     json!({"type":"reply", "request_id":id, "ok":true, "data":null})
                                 }
                             }
-                        } else if matches!(req["cmd"].as_str(), Some("eval" | "cancel_eval")) {
+                        } else if matches!(req["cmd"].as_str(), Some("eval" | "study_eval" | "cancel_eval")) {
                             if let Some((old_id, task)) = analysis.take() {
                                 let finished = task.0.is_finished();
                                 drop(task);
@@ -2202,6 +2275,7 @@ pub async fn run() -> Result<()> {
             logging_in: false,
             challenges: BTreeMap::new(),
         }),
+        studies: Mutex::new(crate::study::Library::load(&crate::data_dir().join("studies.json"))?),
         api: RwLock::new(None),
         tx,
         streams: Mutex::new(BTreeMap::new()),

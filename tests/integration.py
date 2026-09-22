@@ -158,6 +158,22 @@ class Handler(BaseHTTPRequestHandler):
             return self.stream(self.server.watch, {"id": "watch001", "speed": "blitz", "rated": True, "players": {"white": {"user": {"name": "José"}, "rating": 3000}, "black": {"aiLevel": 8}}})
         if self.path.startswith("/game/export/watch001?"):
             return self.json({"id": "watch001", "status": "mate", "winner": "white"})
+        if self.path == "/api/stream/broadcast/round/round001.pgn":
+            self.send_response(200)
+            self.send_header("Content-Type", "application/x-chess-pgn")
+            self.end_headers()
+            try:
+                while True:
+                    raw = self.server.broadcast.get(timeout=10)
+                    if raw is None:
+                        self.close_connection = True
+                        return
+                    # Deliberately split every byte, including the UTF-8 player name.
+                    for byte in raw.encode():
+                        self.wfile.write(bytes([byte])); self.wfile.flush()
+            except (BrokenPipeError, ConnectionResetError, queue.Empty):
+                self.close_connection = True
+            return
         if self.path == "/api/broadcast/top":
             return self.json({"active": [{"tour": {"id": "tour0001", "name": "Test Invitational"}, "round": {"id": "round001", "name": "Round 1", "ongoing": True}}], "past": {"currentPageResults": []}})
         if self.path == "/api/broadcast/noScope1":
@@ -318,6 +334,7 @@ def main():
     http = ThreadingHTTPServer(("127.0.0.1", 0), Handler)
     http.history_queries = []
     http.tv = queue.Queue()
+    http.broadcast = queue.Queue()
     http.watch = queue.Queue()
     http.explorer_fens = []
     http.explorer_queries = []
@@ -654,6 +671,32 @@ def main():
             assert preview["analysis"] and not preview["online"]
             assert not c.call("broadcast_round", id="../bad")["ok"]
             assert not c.call("broadcast_game", round="round001", chapter="../bad")["ok"]
+            # A round stream updates games without saving them or polling PGN exports.
+            live = Client(str(base / "socket")); clients.append(live)
+            assert not live.call("broadcast_watch", round="../bad")["ok"]
+            assert live.call("broadcast_watch", round="round001", request_id="live-1")["ok"]
+            def pgn(chapter, moves, result="*"):
+                return f'[White "José"]\n[Black "Beta"]\n[GameURL "https://lichess.org/broadcast/t/r/round001/{chapter}"]\n[Result "{result}"]\n\n{moves} {result}\n\n'
+            def game_event():
+                return next(e for e in iter(live.read, None) if e["type"] == "broadcast" and "game" in e)
+            http.broadcast.put(pgn("chapter1", "1. e4 {[%clk 0:05:00]}"))
+            first = game_event()
+            assert first["subscription"] == "live-1" and first["game"]["state"] == "playing", first
+            assert first["game"]["players"][0]["clock"] == 30000
+            http.broadcast.put(pgn("chapter2", ""))
+            assert game_event()["game"]["state"] == "waiting"
+            http.broadcast.put(pgn("chapter1", "1. e4 e5 2. Nf3", "1-0"))
+            final = game_event()["game"]
+            assert final["state"] == "finished" and final["history"]["san"] == ["e4", "e5", "Nf3"], final
+            http.broadcast.put(None)
+            disconnected = next(e for e in iter(live.read, None) if e["type"] == "broadcast" and e.get("connected") is False)
+            assert "reconnecting" in disconnected["error"]
+            assert live.call("broadcast_watch", round="round001", request_id="live-2")["ok"]
+            http.broadcast.put(pgn("chapter1", "1. d4"))
+            reconnected = game_event()
+            assert reconnected["subscription"] == "live-2" and reconnected["game"]["lastMove"] == "d2d4"
+            assert live.call("broadcast_stop")["ok"]
+            assert not any(g["id"] in ("chapter1", "chapter2", "broadcast") for g in c.call("list")["data"])
             copied = c.call("broadcast_open", round="round001", chapter="chapter1")["data"]["game"]
             snap = state_game(copied)
             assert snap["analysis"] and snap["san"] == preview["san"] and not snap["online"], snap

@@ -21,7 +21,35 @@ ColumnLayout {
     property string error: ""
     property string historyError: ""
     property double retryAt: 0
-    readonly property var rows: round ? (round.games || []) : tournament ? (tournament.rounds || []) : tournaments
+    property string subscription: ""
+    property bool liveConnected: false
+    property string liveError: ""
+    property string liveWarning: ""
+    property double lastUpdate: 0
+    property var liveGames: ({})
+    property string gameFilter: "all"
+    readonly property var games: round ? (round.games || []).map(g => liveGames[g.id] || g).concat(Object.keys(liveGames).filter(id => !(round.games || []).some(g => g.id === id)).map(id => liveGames[id])) : []
+    readonly property var rows: round ? games.filter(g => gameFilter === "all" || gameState(g) === gameFilter) : tournament ? (tournament.rounds || []) : tournaments
+    function gameState(game) {
+        if (["1-0", "0-1", "1/2-1/2"].includes(game.status)) return "finished";
+        if (game.state) return game.state;
+        return game.lastMove ? "playing" : "waiting";
+    }
+    function statusText(game) {
+        const value = gameState(game);
+        return value === "finished" ? "Finished · " + game.status : value === "playing" ? "In progress" : "Awaiting first move";
+    }
+    function count(value) { return games.filter(g => gameState(g) === value).length; }
+    function filter(value) { gameFilter = value; index = 0; }
+    function follow() {
+        if (!round || !app.daemonConnected) return;
+        liveConnected = false; liveError = "";
+        subscription = app.send("broadcast_watch", {round: round.round.id, quiet: true}) || "";
+    }
+    function stop() {
+        subscription = ""; liveConnected = false;
+        if (app.daemonConnected) app.send("broadcast_stop", {quiet: true});
+    }
     readonly property bool busy: request !== ""
     readonly property bool narrow: width < 700
     readonly property string title: round ? round.round.name : tournament ? tournament.tour.name : "Tournaments"
@@ -35,19 +63,20 @@ ColumnLayout {
     }
     function moves() {
         if (!round || !selected || historyRequest) return;
+        if (liveGames[selected.id]) { history = liveGames[selected.id].history; return; }
         historyError = "";
         historyRequest = app.send("broadcast_game", {round: round.round.id, chapter: selected.id}) || "";
     }
     function open(i) {
         if (busy || i < 0 || i >= rows.length) return;
         index = i; error = "";
-        if (round) { selected = rows[i]; history = null; historyRequest = ""; moves(); }
+        if (round) { selected = rows[i]; history = selected.history || null; historyRequest = ""; moves(); }
         else if (tournament) request = app.send("broadcast_round", {id: rows[i].id}) || "";
         else request = app.send("broadcast_tournament", {id: rows[i].tour.id}) || "";
     }
     function back() {
         request = ""; historyRequest = ""; error = ""; historyError = ""; index = 0;
-        if (round) { round = null; selected = null; history = null; }
+        if (round) { stop(); round = null; selected = null; history = null; liveGames = ({}); gameFilter = "all"; }
         else if (tournament) tournament = null;
         else closeRequested();
     }
@@ -64,8 +93,9 @@ ColumnLayout {
         else if (key === "k" || event.key === Qt.Key_Up) index = Math.max(0, index - 1);
         else if (event.key === Qt.Key_Return || event.key === Qt.Key_Enter) open(index);
         else if (event.key === Qt.Key_Backspace) back();
-        else if (key === "r") refresh();
-        else if (key === "o") analyse();
+        else if (key === "r") { refresh(); if (round && !liveConnected) follow(); }
+        else if (round && ["1", "2", "3", "4"].includes(key)) filter(["all", "playing", "finished", "waiting"][Number(key)-1]);
+        else if (key === "a") analyse();
         else if (key === "L") external();
         else return false;
         list.positionViewAtIndex(index, ListView.Contain);
@@ -89,6 +119,25 @@ ColumnLayout {
     }
     Connections {
         target: root.app
+        function onBroadcastEvent(event) {
+            if (!root.round || event.round !== root.round.round.id || event.subscription !== root.subscription) return;
+            if (event.connected !== undefined) root.liveConnected = event.connected;
+            root.liveError = event.error || "";
+            if (event.warning) root.liveWarning = event.warning;
+            if (event.game) {
+                const focused = root.rows[root.index];
+                const game = event.game;
+                root.liveGames = Object.assign({}, root.liveGames, {[game.id]: game});
+                root.lastUpdate = Date.now();
+                if (root.selected && root.selected.id === game.id) {
+                    root.selected = game; root.history = game.history; root.historyError = ""; root.historyRequest = "";
+                }
+                if (focused) {
+                    const next = root.rows.findIndex(g => g.id === focused.id);
+                    root.index = next >= 0 ? next : Math.max(0, Math.min(root.index, root.rows.length - 1));
+                }
+            }
+        }
         function onBroadcastReply(id, cmd, payload, failure) {
             if (id === root.historyRequest && cmd === "broadcast_game") {
                 root.historyRequest = "";
@@ -101,13 +150,13 @@ ColumnLayout {
             if (failure) { root.error = failure; root.retryAt = Date.now() + 60000; return; }
             const data = payload.broadcast;
             if (cmd === "broadcasts") root.tournaments = (data.active || []).concat(data.upcoming || [], data.past ? data.past.currentPageResults || [] : []);
-            else if (cmd === "broadcast_tournament") { root.tournament = data; root.index = 0; }
+            else if (cmd === "broadcast_tournament") { const entering = !root.tournament || root.tournament.tour.id !== data.tour.id; root.tournament = data; if (entering) root.index = 0; }
             else if (cmd === "broadcast_round") {
                 const entering = !root.round || root.round.round.id !== data.round.id;
                 root.round = data;
-                if (entering) { root.index = 0; root.selected = null; root.history = null; }
+                if (entering) { root.index = 0; root.selected = null; root.history = null; root.liveGames = ({}); root.gameFilter = "all"; root.lastUpdate = 0; root.liveWarning = ""; root.follow(); }
                 if (root.selected) {
-                    root.selected = (data.games || []).find(g => g.id === root.selected.id) || null;
+                    root.selected = root.games.find(g => g.id === root.selected.id) || null;
                     root.moves();
                 }
             }
@@ -115,22 +164,45 @@ ColumnLayout {
         }
         function onDaemonConnectedChanged() {
             root.request = ""; root.historyRequest = "";
-            if (root.app.daemonConnected) root.refresh();
+            root.liveConnected = false; root.subscription = "";
+            if (root.app.daemonConnected) { root.refresh(); root.follow(); }
         }
     }
     Component.onCompleted: refresh()
-    Timer { interval: root.round ? 15000 : 60000; running: root.app.daemonConnected; repeat: true; onTriggered: root.refresh() }
+    Component.onDestruction: stop()
+    Timer { interval: 60000; running: root.app.daemonConnected; repeat: true; onTriggered: root.refresh() }
 
     Flow {
         Layout.fillWidth: true; spacing: 6
-        ActionButton { objectName: "broadcastBack"; theme: app; compact: true; label: "Back"; hint: "⌫"; onClicked: root.back() }
-        ActionButton { theme: app; compact: true; label: "TV channels"; hint: "b"; onClicked: root.closeRequested() }
-        ActionButton { objectName: "broadcastRefresh"; theme: app; compact: true; label: "Refresh"; hint: "r"; enabled: !root.busy && app.clockNow >= root.retryAt; opacity: enabled ? 1 : 0.4; onClicked: root.refresh() }
+        ActionButton { objectName: "broadcastBack"; theme: app; compact: true; label: "Back"; hint: "⌫"; onClicked: app.navigateBack() }
+        ActionButton { objectName: "broadcastRefresh"; theme: app; compact: true; label: "Refresh"; hint: "r"; enabled: !root.busy && app.clockNow >= root.retryAt; opacity: enabled ? 1 : 0.4; onClicked: { root.refresh(); if (root.round && !root.liveConnected) root.follow(); } }
         ActionButton { theme: app; compact: true; label: "Lichess"; hint: "L"; onClicked: root.external() }
     }
     Text { Layout.fillWidth: true; text: root.title; textFormat: Text.PlainText; wrapMode: Text.Wrap; color: app.fg; font { pixelSize: 22; weight: Font.DemiBold } }
     Text { Layout.fillWidth: true; visible: !!root.tournament; text: root.tournament ? root.tournament.tour.name : ""; textFormat: Text.PlainText; wrapMode: Text.Wrap; color: app.muted; font.pixelSize: 12 }
-    Text { Layout.fillWidth: true; text: root.busy ? "Loading…" : !app.daemonConnected ? "Disconnected — waiting to reconnect…" : root.error || (root.round ? "Boards update every 15 seconds · clocks show the last reported time" : "Live and recent broadcasts · j/k select · Enter open"); textFormat: Text.PlainText; wrapMode: Text.Wrap; color: root.error ? app.danger : app.muted; font.pixelSize: 12 }
+    Text { Layout.fillWidth: true; text: root.busy ? "Loading…" : !app.daemonConnected ? "Disconnected — waiting to reconnect…" : root.error || (root.round ? (root.liveError || (root.liveConnected ? "Live connection · moves update as received" : "Connecting to live broadcast…")) : "Live and recent broadcasts · j/k select · Enter open"); textFormat: Text.PlainText; wrapMode: Text.Wrap; color: root.error ? app.danger : app.muted; font.pixelSize: 12 }
+    Text {
+        Layout.fillWidth: true; visible: !!root.round; wrapMode: Text.Wrap
+        text: root.count("playing") + " in progress · " + root.count("finished") + " finished · " + root.count("waiting") + " awaiting first move"
+        color: app.fg; font.pixelSize: 13
+    }
+    Flow {
+        visible: !!root.round; Layout.fillWidth: true; spacing: 6
+        Repeater {
+            model: [{value: "all", label: "All", key: "1"}, {value: "playing", label: "In progress", key: "2"}, {value: "finished", label: "Finished", key: "3"}, {value: "waiting", label: "Not started", key: "4"}]
+            delegate: ActionButton {
+                required property var modelData
+                objectName: "broadcastFilter_" + modelData.value
+                theme: app; compact: true; label: (root.gameFilter === modelData.value ? "● " : "") + modelData.label; hint: modelData.key
+                onClicked: root.filter(modelData.value)
+            }
+        }
+    }
+    Text {
+        Layout.fillWidth: true; visible: !!root.round; wrapMode: Text.Wrap
+        text: (root.lastUpdate ? "Last update " + Math.max(0, Math.floor((app.clockNow - root.lastUpdate) / 1000)) + "s ago · " : "") + "Clocks show the last reported time; the event may delay its broadcast." + (root.liveWarning ? " " + root.liveWarning : "")
+        color: app.muted; font.pixelSize: 11
+    }
     GridLayout {
         Layout.fillWidth: true; Layout.fillHeight: true
         columns: root.narrow || !root.selected ? 1 : 2; columnSpacing: 18; rowSpacing: 12
@@ -155,12 +227,12 @@ ColumnLayout {
                         Text { width: parent.width; elide: Text.ElideRight; textFormat: Text.PlainText; text: modelData.tour ? modelData.tour.name : modelData.name || "Game"; color: app.fg; font.pixelSize: 13 }
                         Text {
                             width: parent.width; elide: Text.ElideRight; textFormat: Text.PlainText; color: app.muted; font.pixelSize: 11
-                            text: root.round ? (modelData.status && modelData.status !== "*" ? modelData.status : "In progress") : ((modelData.round || modelData).ongoing ? "Live · " : (modelData.round || modelData).finished ? "Finished · " : "Scheduled · ") + (modelData.round ? modelData.round.name : "Enter to view games")
+                            text: root.round ? root.statusText(modelData) : ((modelData.round || modelData).ongoing ? "Live · " : (modelData.round || modelData).finished ? "Finished · " : "Scheduled · ") + (modelData.round ? modelData.round.name : "Enter to view games")
                         }
                     }
                     MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: root.open(parent.index) }
                 }
-                Text { anchors.centerIn: parent; width: parent.width - 20; horizontalAlignment: Text.AlignHCenter; wrapMode: Text.Wrap; visible: !root.busy && !root.rows.length; text: root.error ? "Use Refresh to try again." : "No broadcasts or games available yet."; color: app.muted; font.pixelSize: 13 }
+                Text { anchors.centerIn: parent; width: parent.width - 20; horizontalAlignment: Text.AlignHCenter; wrapMode: Text.Wrap; visible: !root.busy && !root.rows.length; text: root.error ? "Use Refresh to try again." : (root.round && root.games.length ? "No games match this filter." : "No broadcasts or games available yet."); color: app.muted; font.pixelSize: 13 }
             }
         }
         ColumnLayout {
@@ -171,7 +243,7 @@ ColumnLayout {
                     required property int modelData
                     readonly property var player: (root.selected.players || [])[modelData] || {}
                     Layout.fillWidth: true; textFormat: Text.PlainText; wrapMode: Text.Wrap
-                    text: [player.title, player.name || "Black", player.rating, root.clock(player)].filter(v => v !== undefined && v !== "").join("  ")
+                    text: [player.title, player.name || "Black", player.rating, root.clock(player)].filter(v => v !== undefined && v !== null && v !== "").join("  ")
                     color: app.fg; font.pixelSize: 14
                 }
             }
@@ -186,16 +258,16 @@ ColumnLayout {
             Text {
                 readonly property var player: root.selected ? (root.selected.players || [])[0] || {} : ({})
                 Layout.fillWidth: true; textFormat: Text.PlainText; wrapMode: Text.Wrap
-                text: [player.title, player.name || "White", player.rating, root.clock(player)].filter(v => v !== undefined && v !== "").join("  ")
+                text: [player.title, player.name || "White", player.rating, root.clock(player)].filter(v => v !== undefined && v !== null && v !== "").join("  ")
                 color: app.fg; font.pixelSize: 14
             }
-            Text { Layout.fillWidth: true; text: root.selected && root.selected.status !== "*" ? root.selected.status || "" : "In progress"; color: app.muted; font.pixelSize: 12 }
+            Text { Layout.fillWidth: true; text: root.selected ? root.statusText(root.selected) : ""; color: app.muted; font.pixelSize: 12 }
             Text {
                 objectName: "broadcastMoves"; Layout.fillWidth: true; textFormat: Text.PlainText; wrapMode: Text.Wrap
                 text: root.historyError || root.moveText()
                 color: root.historyError ? app.danger : app.muted; font { family: app.mono; pixelSize: 12 }
             }
-            ActionButton { objectName: "broadcastAnalyse"; theme: app; label: "Open analysis copy"; hint: "o"; enabled: !!root.history; opacity: enabled ? 1 : 0.4; onClicked: root.analyse() }
+            ActionButton { objectName: "broadcastAnalyse"; theme: app; label: "Open analysis copy"; hint: "a"; enabled: !!root.history; opacity: enabled ? 1 : 0.4; onClicked: root.analyse() }
         }
     }
 }

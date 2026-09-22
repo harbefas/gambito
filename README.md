@@ -65,6 +65,9 @@ cargo build --release
 | `hjkl` + Enter | Move a piece | `i` | Type a move (`Nf3`, `e2e4`) |
 | `[` `]` | Step through moves | `a` | Analysis board from here |
 | `t` / `o` / `z` / `p` | TV / openings / puzzles / profile | `z` (on a board) | Zen mode |
+| `d` | Study library | `S` (finished game) | Save for study |
+| Backspace | Back one level | Esc | Cancel |
+| Home / End | Start / live position | Enter | Open / activate |
 | `w` | New window | `?` | All keys |
 
 Full list: [docs/keyboard.md](docs/keyboard.md).

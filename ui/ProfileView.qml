@@ -125,7 +125,7 @@ Flickable {
             else if (profile.tab === "games" && ["s", "r", "o"].includes(key)) profile.cycleFilter({"s": "speed", "r": "rated", "o": "result"}[key]);
             else if (key === "j" || event.key === Qt.Key_Down) profile.index = Math.min(profile.currentList.length - 1, profile.index + 1);
             else if (key === "k" || event.key === Qt.Key_Up) profile.index = Math.max(0, profile.index - 1);
-            else if (event.key === Qt.Key_Return) profile.activate(profile.index);
+            else if ((event.key === Qt.Key_Return || event.key === Qt.Key_Enter)) profile.activate(profile.index);
             else if (key === "x" && profile.tab === "boards" && profile.currentList[profile.index]) profile.app.confirmDelete(profile.currentList[profile.index].id);
             else return false;
             return true;
@@ -144,7 +144,7 @@ Flickable {
         // Header: identity and lifetime totals.
         RowLayout {
             Layout.fillWidth: true; spacing: 14
-            ActionButton { objectName: "profileBack"; theme: app; compact: true; icon: "←"; label: "Lobby"; hint: "g"; onClicked: app.view = "" }
+            ActionButton { objectName: "profileBack"; theme: app; compact: true; icon: "←"; label: "Back"; hint: "⌫"; onClicked: app.navigateBack() }
             Column {
                 // Elides instead of pushing the buttons and totals out of the window.
                 Layout.fillWidth: true; Layout.minimumWidth: 80; Layout.preferredWidth: 0; spacing: 2

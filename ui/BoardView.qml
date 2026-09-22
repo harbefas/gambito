@@ -229,13 +229,15 @@ Flickable {
                 anchors { fill: parent; margins: 14 } spacing: 10
                 RowLayout {
                     Layout.fillWidth: true; spacing: 10
-                    ActionButton { objectName: "gamesButton"; theme: app; compact: true; icon: "←"; hint: "g"; onClicked: app.selectedId = "" }
+                    ActionButton { objectName: "gamesButton"; visible: !app.game || !app.game.analysis_source; theme: app; compact: true; icon: "←"; hint: "⌫"; onClicked: app.navigateBack() }
+                    ActionButton { objectName: "sourceButton"; visible: !!app.game && !!app.game.analysis_source; theme: app; compact: true; icon: "←"; label: "Source"; hint: "⌫"; onClicked: app.navigateBack() }
                     Column {
                         Layout.fillWidth: true; spacing: 1
                         Text { width: parent.width; text: app.statusText(); color: app.fg; elide: Text.ElideRight; font { pixelSize: 15; weight: Font.DemiBold } }
                         Text { width: parent.width; elide: Text.ElideRight; text: app.gameInfo(); color: app.muted; font.pixelSize: 11 }
                     }
                     ActionButton { objectName: "deleteBoardButton"; visible: !!app.game && app.game.analysis; theme: app; compact: true; kind: "danger"; icon: "✕"; hint: "x"; onClicked: app.confirmDelete(app.selectedId) }
+                    ActionButton { objectName: "studyCaptureButton"; visible: !!app.game && !app.isActive(app.game); theme: app; compact: true; label: "Study"; hint: "S"; onClicked: app.send("study_capture", {ply: app.shownPly()}) }
                     ActionButton { objectName: "zenButton"; theme: app; compact: true; icon: "⤢"; hint: "z"; onClicked: app.zen = true }
                     ActionButton { objectName: "helpButton"; theme: app; compact: true; icon: "?"; hint: ""; onClicked: app.helpVisible = true }
                 }
@@ -559,7 +561,7 @@ Flickable {
                 }
                 RowLayout {
                     Layout.fillWidth: true; spacing: 6
-                    ActionButton { objectName: "rewindStart"; theme: app; compact: true; label: "«"; hint: "{"; onClicked: app.rewind(0) }
+                    ActionButton { objectName: "rewindStart"; theme: app; compact: true; label: "«"; hint: "Home"; onClicked: app.rewind(0) }
                     ActionButton { objectName: "rewindBack"; theme: app; compact: true; label: "‹"; hint: "["; onClicked: app.rewind(app.shownPly() - 1) }
                     Text {
                         Layout.fillWidth: true; horizontalAlignment: Text.AlignHCenter
@@ -567,12 +569,11 @@ Flickable {
                         color: app.viewPly >= 0 ? app.fg : app.faint; font { family: app.mono; pixelSize: 12; weight: app.viewPly >= 0 ? Font.DemiBold : Font.Normal }
                     }
                     ActionButton { objectName: "rewindForward"; theme: app; compact: true; label: "›"; hint: "]"; onClicked: app.rewind(app.shownPly() + 1) }
-                    ActionButton { objectName: "rewindLive"; theme: app; compact: true; label: "»"; hint: "}"; kind: app.viewPly >= 0 ? "primary" : "normal"; onClicked: app.rewind(Infinity) }
+                    ActionButton { objectName: "rewindLive"; theme: app; compact: true; label: "»"; hint: "End"; kind: app.viewPly >= 0 ? "primary" : "normal"; onClicked: app.rewind(Infinity) }
                 }
                 RowLayout {
                     Layout.fillWidth: true; spacing: 6; visible: !app.confirmation
                     ActionButton { objectName: "analyseButton"; theme: app; Layout.fillWidth: true; Layout.minimumWidth: implicitWidth; compact: true; label: app.game && app.game.analysis ? "Branch" : "Analyse"; hint: "a"; enabled: app.engineAllowed; opacity: enabled ? 1 : 0.4; onClicked: app.analyse() }
-                    ActionButton { objectName: "sourceButton"; theme: app; visible: !!app.game && !!app.game.analysis_source; compact: true; label: "Source"; hint: "b"; onClicked: app.returnToSource() }
                     ActionButton { objectName: "fenButton"; theme: app; compact: true; label: "FEN"; onClicked: app.prefill(":fen ") }
                     ActionButton { objectName: "flipButton"; theme: app; compact: true; icon: "⇅"; onClicked: app.runCommand(":flip") }
                     ActionButton { theme: app; compact: true; icon: "+"; onClicked: app.newWindow() }

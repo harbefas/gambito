@@ -41,7 +41,7 @@ ColumnLayout {
     }
     RowLayout {
         Layout.fillWidth: true
-        ActionButton { theme: app; label: "Lobby"; hint: "g"; onClicked: app.view = "" }
+        ActionButton { theme: app; label: "Back"; hint: "⌫"; onClicked: app.navigateBack() }
         Text { Layout.fillWidth: true; text: "Challenges"; color: app.fg; font.pixelSize: 24 }
         ActionButton { theme: app; label: "Refresh"; hint: "r"; onClicked: app.send("challenges") }
     }

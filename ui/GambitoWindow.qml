@@ -58,6 +58,7 @@ Scope {
     // Replies for view-owned requests (profile, perf, history, puzzle, blog), so their data is freed with the view.
     signal replied(string cmd, var data, string error)
     // Broadcast replies include request IDs so views can discard responses after navigation.
+    signal broadcastEvent(var event)
     signal broadcastReply(string request, string cmd, var payload, string error)
     // Lichess TV events for the lobby (streamed only between tv_watch and tv_stop).
     signal tvEvent(var event, string error)
@@ -139,8 +140,8 @@ Scope {
     }
     property var board: decodeFen(game ? (rewound ? positions.fens[viewPly] : game.fen) : "")
     readonly property var helpSections: [
-        {title: "board", rows: [["c", "player chat"], ["T / Y", "request or accept / decline takeback"], ["h j k l / arrows", "move cursor"], ["enter / space", "select square"], ["[  ]", "previous / next move"], ["{  }", "start / live position"], ["e", "engine on / off"], ["m", "opening explorer on / off"], ["a", "analyse / branch here"], ["b", "return to source"], ["v u y", "puzzle hint / solution / retry"], ["F", "FEN"], ["L", "open on lichess.org"], ["D R", "draw / resign"], ["z", "zen mode: board only"], ["r", "load Lichess analysis"], ["x", "delete analysis board"], ["- / +", "decrease / increase depth"], ["d", "set analysis depth"], ["i", "type a move"], [":", "command"], ["f", "flip board"], ["esc", "cancel"]]},
-        {title: "window", rows: [["C", "challenges (u player, t time, c color, v rated, s send)"], ["g", "lobby"], ["p", "profile (1–4 tabs, s r o history filters, l sign out)"], ["s c", "find opponent / play computer"], ["l", "sign in / out (Enter confirms)"], ["t", "Lichess TV (b tournaments, j/k select, Enter open, Backspace back, r refresh)"], ["o", "openings (arrows pick, enter play, backspace back, b start, a analyse, s r filters)"], ["z", "puzzle themes ([ ] category, d difficulty)"], ["j k / enter", "lobby: games in progress, then news"], ["n", "new local game"], ["w", "new window"], ["?", "help"], ["q", "close"]]},
+        {title: "board", rows: [["c", "player chat"], ["T / Y", "request or accept / decline takeback"], ["h j k l / arrows", "move cursor"], ["enter / space", "select square"], ["[  ]", "previous / next move"], ["Home / End", "start / live position"], ["e", "engine on / off"], ["m", "opening explorer on / off"], ["a", "analyse / branch here"], ["S", "save game position for study"], ["Backspace", "back to source / previous page"], ["v u y", "puzzle hint / solution / retry"], ["F", "FEN"], ["L", "open on lichess.org"], ["D R", "draw / resign"], ["z", "zen mode: board only"], ["r", "load Lichess analysis"], ["x", "delete analysis board"], ["- / +", "decrease / increase depth"], ["d", "set analysis depth"], ["i", "type a move"], [":", "command"], ["f", "flip board"], ["esc", "cancel"]]},
+        {title: "window", rows: [["C", "challenges (u player, t time, c color, v rated, s send)"], ["Backspace", "back one level"], ["p", "profile (1–4 tabs, s r o history filters, l sign out)"], ["s c d", "find opponent / computer / study"], ["l", "sign in / out (Enter confirms)"], ["t", "Lichess TV (b tournaments, j/k select, Enter open, Backspace back, a analyse, r refresh, 1–4 filters)"], ["o", "openings (arrows pick, enter play, Backspace back, Home start, a analyse, s r filters)"], ["z", "puzzle themes ([ ] category, d difficulty)"], ["j k / enter", "lobby: games in progress, then news"], ["n", "new local game"], ["w", "new window"], ["?", "help"], ["q", "close"]]},
         {title: "commands", rows: [[":challenges", "send and respond to invitations"], [":challenge USER [MIN INC rated]", "challenge a player"], [":accept / :decline / :cancelchallenge ID", "respond to an invitation"], [":chat [MESSAGE]", "toggle chat or send message"], [":takeback [no]", "request / accept / decline takeback"], [":analyse", "branch from viewed position"], [":fen FEN", "analyse a FEN position"], [":source", "return to source game"], [":lichess", "load Lichess analysis"], [":explorer", "opening explorer on / off"], [":puzzle", "daily puzzle on the board"], [":hint", "puzzle hint"], [":retry", "restart puzzle"], [":solution", "show puzzle solution"], [":delete", "delete analysis board"], [":depth N", "set analysis depth (1–245)"], [":local", "new local game"], [":open ID", "open Lichess game"], [":seek 10 5 [rated]", "seek opponent"], [":cancel", "cancel seek"], [":ai 1-8", "play Lichess AI"], [":play", "online play options"], [":login", "connect Lichess"], [":logout", "sign out of Lichess"], [":resign", "resign"], [":draw", "offer or accept draw"], [":confirm", "confirm action"], [":games", "lobby"], [":profile", "profile: ratings, history, boards"], [":tv", "Lichess TV"], [":zen", "board only (z on the board)"], [":openings", "opening explorer page"], [":puzzles", "puzzle themes"], [":next", "next puzzle of this theme"], [":window", "new window"], [":quit", "close"]]},
         {title: "moves", rows: [["e4  Nf3  O-O", "SAN"], ["e2e4", "UCI"], ["e7e8q", "promotion"]]}
     ]
@@ -244,6 +245,17 @@ Scope {
         let total = 0;
         for (const piece of board) if (piece) total += (values[piece.toLowerCase()] || 0) * (piece === piece.toUpperCase() ? 1 : -1);
         return total;
+    }
+    // One navigation action for buttons and keys; a page may consume it for a child level.
+    function navigateBack() {
+        if (helpVisible || confirmation || promotion) return;
+        if (playVisible) { if (!seeking) playVisible = false; return; }
+        if (selectedId) {
+            if (game && game.analysis_source) returnToSource();
+            else selectedId = "";
+        } else if (view !== "") {
+            if (!(viewKeys && viewKeys("", {key: Qt.Key_Backspace}))) view = "";
+        }
     }
     function returnToSource() {
         if (!game || !game.analysis_source) return;
@@ -361,6 +373,7 @@ Scope {
                 if (viewPly >= 0 && game && positions.plies !== game.moves.length && wantedPly < 0) { wantedPly = viewPly; send("positions"); }
             } else if (e.type === "notice") tell(e.message, true);
             else if (e.type === "chat") chatLine(e.game, e.line);
+            else if (e.type === "broadcast") broadcastEvent(e);
             else if (e.type === "tv") tvEvent(e.event || null, e.error || "");
             else if (e.type === "eval") {
                 if (engineOn && engineAllowed && evalPending && e.request_id === evalRequest && e.eval.for === selectedId && e.eval.ply === shownPly()) evalData = e.eval;
@@ -372,7 +385,7 @@ Scope {
                 if (cmd === "eval" && (e.request_id !== evalRequest || !engineOn || !engineAllowed)) return;
                 if (!e.ok && cmd === "eval") { evalData = {error: e.error}; evalPending = false; return; }
                 if (["broadcasts", "broadcast_tournament", "broadcast_round", "broadcast_game"].includes(cmd)) { broadcastReply(e.request_id, cmd, e.ok ? e.data : null, e.ok ? "" : e.error); return; }
-                if (["profile", "perf", "history", "puzzle", "blog", "tv_channels", "crosstable", "puzzle_themes", "puzzle_dashboard"].includes(cmd)) { replied(cmd, e.ok ? e.data : null, e.ok ? "" : e.error); if (!e.ok && ["profile", "perf", "history"].includes(cmd)) tell(e.error, true); return; }
+                if (["profile", "perf", "history", "puzzle", "blog", "tv_channels", "crosstable", "puzzle_themes", "puzzle_dashboard"].includes(cmd) || cmd.startsWith("study_")) { replied(cmd, e.ok ? e.data : null, e.ok ? "" : e.error); if (!e.ok && ["profile", "perf", "history"].includes(cmd)) tell(e.error, true); return; }
                 if (cmd === "tv_watch" || cmd === "tv_stop") return;
                 // Only the latest request counts: replies for positions already left are dropped.
                 if (cmd === "explorer") {
@@ -454,6 +467,7 @@ Scope {
         case "tv": selectedId = ""; view = "tv"; break;
         case "zen": zen = !zen; break;
         case "openings": selectedId = ""; view = "openings"; break;
+        case "study": selectedId = ""; view = "study"; break;
         case "puzzles": selectedId = ""; view = "puzzles"; break;
         case "next": if (game && game.puzzle && game.puzzle.angle) send("puzzle_next", {angle: game.puzzle.angle, difficulty: puzzleDifficulty}); break;
         case "open": send("open", {game:words[0] || ""}); break;
@@ -595,17 +609,18 @@ Scope {
                 clip: true
                 focus: true
                 Keys.onPressed: event => {
-                    if (event.key === Qt.Key_Escape && root.playVisible) { if (root.seeking) root.send("cancel"); else root.playVisible = false; event.accepted = true; return; }
+                    if (event.key === Qt.Key_Escape && root.playVisible) { if (root.seeking) root.send("cancel"); event.accepted = true; return; }
                     if (root.playVisible) {
-                        if (event.text === ":") { command.text = ":"; command.forceActiveFocus(); command.cursorPosition = 1; }
+                        if (event.key === Qt.Key_Backspace) root.navigateBack();
+                        else if (event.text === ":") { command.text = ":"; command.forceActiveFocus(); command.cursorPosition = 1; }
                         else if (!root.seeking) playScreen.handleKey(event.text, event);
                         event.accepted = true; return;
                     }
-                    if (event.key === Qt.Key_Escape && !root.game && root.view !== "" && !root.confirmation) { root.view = ""; event.accepted = true; return; }
-                    if (event.key === Qt.Key_Escape && root.loggingIn && !root.confirmation) { root.send("cancel_login"); event.accepted = true; return; }
+                    if (event.key === Qt.Key_Escape && root.loggingIn && !root.confirmation && !root.helpVisible) { root.send("cancel_login"); event.accepted = true; return; }
                     if (event.key === Qt.Key_Escape) { root.origin = -1; root.confirmation = ""; root.promotion = ""; root.helpVisible = false; root.tell("", false); event.accepted = true; return; }
                     if (root.helpVisible) { event.accepted = true; return; }
                     if (root.confirmation && (event.key === Qt.Key_Return || event.key === Qt.Key_Enter)) { root.runCommand(":confirm"); event.accepted = true; return; }
+                    if (event.key === Qt.Key_Backspace) { root.navigateBack(); event.accepted = true; return; }
                     const key = event.text;
                     if (key === "i" || key === ":") { command.text = key === ":" ? ":" : ""; command.forceActiveFocus(); command.cursorPosition = command.text.length; }
                     else if (key === "?") root.helpVisible = true;
@@ -613,7 +628,6 @@ Scope {
                     else if (key === "T" && root.game) root.runCommand(":takeback");
                     else if (key === "Y" && root.game) root.runCommand(":takeback no");
                     else if (key === "c" && root.game) root.runCommand(":chat");
-                    else if (key === "g") { if (root.game) root.selectedId = ""; else root.view = ""; }
                     else if (key === "n" && root.game && root.game.puzzle && root.game.puzzle.angle && !root.puzzleUnsolved) root.runCommand(":next");
                     else if (key === "n") root.send("local");
                     else if (key === "w") root.newWindow();
@@ -630,11 +644,12 @@ Scope {
                         else if (key === "y" || key === "v" || key === "u") root.lobbyPuzzleKey(key);
                         else if (key === "b" && root.loggingIn && root.loginUrl) Qt.openUrlExternally(root.loginUrl);
                         else if (key === "o") root.view = "openings";
+                        else if (key === "d") root.view = "study";
                         else if (key === "z") root.view = "puzzles";
                         else if (key === "j" || event.key === Qt.Key_Down) root.listIndex = Math.min(root.orderedGames.length + root.newsCount - 1, root.listIndex + 1);
                         else if (key === "k" || event.key === Qt.Key_Up) root.listIndex = Math.max(0, root.listIndex - 1);
-                        else if (event.key === Qt.Key_Return && root.listIndex >= root.orderedGames.length) root.openNews(root.listIndex - root.orderedGames.length);
-                        else if (event.key === Qt.Key_Return && root.orderedGames.length) root.choose(root.orderedGames[Math.max(0,root.listIndex)].id);
+                        else if ((event.key === Qt.Key_Return || event.key === Qt.Key_Enter) && root.listIndex >= root.orderedGames.length) root.openNews(root.listIndex - root.orderedGames.length);
+                        else if ((event.key === Qt.Key_Return || event.key === Qt.Key_Enter) && root.orderedGames.length) root.choose(root.orderedGames[Math.max(0,root.listIndex)].id);
                         else if (key === "x" && root.orderedGames[root.listIndex]) root.confirmDelete(root.orderedGames[root.listIndex].id);
                         else return;
                     } else if (key === "e") root.engineOn = !root.engineOn;
@@ -643,7 +658,6 @@ Scope {
                     else if (key === "-") root.adjustDepth(-1);
                     else if (key === "d") root.prefill(":depth " + root.engineDepth);
                     else if (key === "a") root.analyse();
-                    else if (key === "b") root.returnToSource();
                     else if (key === "z") root.zen = !root.zen;
                     else if (key === "r") root.loadReview();
                     else if (key === "v" && root.puzzleUnsolved) root.puzzleHint();
@@ -653,16 +667,17 @@ Scope {
                     else if (key === "F") root.prefill(":fen ");
                     else if (key === "D" && root.game.color && root.isActive(root.game)) root.runCommand(":draw");
                     else if (key === "R" && root.game.color && root.isActive(root.game)) root.runCommand(":resign");
+                    else if (key === "S" && root.game) root.send("study_capture", {ply: root.shownPly()});
                     else if (key === "x") root.runCommand(":delete");
                     else if (key === "[") root.rewind(root.shownPly() - 1);
                     else if (key === "]") root.rewind(root.shownPly() + 1);
-                    else if (key === "{") root.rewind(0);
-                    else if (key === "}") root.rewind(Infinity);
+                    else if (event.key === Qt.Key_Home) root.rewind(0);
+                    else if (event.key === Qt.Key_End) root.rewind(Infinity);
                     else if (key === "h" || event.key === Qt.Key_Left) root.cursor = Math.max(0, root.cursor - 1);
                     else if (key === "l" || event.key === Qt.Key_Right) root.cursor = Math.min(63, root.cursor + 1);
                     else if (key === "k" || event.key === Qt.Key_Up) root.cursor = Math.max(0, root.cursor - 8);
                     else if (key === "j" || event.key === Qt.Key_Down) root.cursor = Math.min(63, root.cursor + 8);
-                    else if (event.key === Qt.Key_Return || event.key === Qt.Key_Space) root.selectSquare(root.cursor);
+                    else if ((event.key === Qt.Key_Return || event.key === Qt.Key_Enter) || event.key === Qt.Key_Space) root.selectSquare(root.cursor);
                     else return;
                     event.accepted = true;
                 }
@@ -676,6 +691,7 @@ Scope {
                 Loader { anchors.fill: parent; active: !root.selectedId && root.view === "tv"; sourceComponent: Component { TvView { app: root; focusScope: boardFocus } } }
                 Loader { anchors.fill: parent; active: !root.selectedId && root.view === "puzzles"; sourceComponent: Component { PuzzlesView { app: root; focusScope: boardFocus } } }
                 Loader { anchors.fill: parent; active: !root.selectedId && root.view === "openings"; sourceComponent: Component { OpeningsView { app: root; focusScope: boardFocus } } }
+                Loader { anchors.fill: parent; active: !root.selectedId && root.view === "study"; sourceComponent: Component { StudyView { app: root; focusScope: boardFocus } } }
                 Loader { anchors.fill: parent; active: !!root.game; sourceComponent: Component { BoardView { app: root; focusScope: boardFocus } } }
                 PlayScreen { id: playScreen; objectName: "playScreen"; anchors.fill: parent; app: root; visible: root.playVisible; z: 5 }
                 Rectangle {
@@ -753,6 +769,7 @@ Scope {
                     }
                     ActionButton { objectName: "puzzlesButton"; visible: !root.game && root.view === ""; theme: root; compact: true; icon: "◎"; label: commandBar.narrow ? "" : "Puzzles"; hint: "z"; onClicked: root.view = "puzzles" }
                     ActionButton { objectName: "openingsButton"; visible: !root.game && root.view === ""; theme: root; compact: true; icon: "♞"; label: commandBar.narrow ? "" : "Openings"; hint: "o"; onClicked: root.view = "openings" }
+                    ActionButton { objectName: "studyButton"; visible: !root.game && root.view === ""; theme: root; compact: true; icon: "◈"; label: commandBar.narrow ? "" : "Study"; hint: "d"; onClicked: root.view = "study" }
                     ActionButton { objectName: "profileButton"; visible: !root.game && root.view === ""; theme: root; compact: true; icon: "♔"; label: commandBar.narrow ? "" : root.account ? root.account.username : "Profile"; hint: "p"; onClicked: root.view = "profile" }
                     ActionButton { visible: !root.game && !commandBar.tiny; theme: root; compact: true; icon: "+"; label: commandBar.narrow ? "" : "New window"; hint: "w"; onClicked: root.newWindow() }
                     ActionButton { visible: !root.game && !commandBar.narrow; theme: root; objectName: "lobbyHelpButton"; compact: true; icon: "?"; label: "Help"; onClicked: root.helpVisible = true }

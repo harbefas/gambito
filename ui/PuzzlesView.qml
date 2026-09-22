@@ -47,7 +47,7 @@ GridLayout {
             if (key === "[") puzzles.selectCategory(puzzles.category - 1);
             else if (key === "]") puzzles.selectCategory(puzzles.category + 1);
             else if (key === "d") { const i = puzzles.difficulties.findIndex(d => d[0] === puzzles.app.puzzleDifficulty); puzzles.app.puzzleDifficulty = puzzles.difficulties[(i + 1) % puzzles.difficulties.length][0]; }
-            else if (event.key === Qt.Key_Return) puzzles.start(puzzles.index);
+            else if ((event.key === Qt.Key_Return || event.key === Qt.Key_Enter)) puzzles.start(puzzles.index);
             else if (key === "l" || event.key === Qt.Key_Right) puzzles.index = Math.min(last, puzzles.index + 1);
             else if (key === "h" || event.key === Qt.Key_Left) puzzles.index = Math.max(0, puzzles.index - 1);
             else if (key === "j" || event.key === Qt.Key_Down) puzzles.index = Math.min(last, puzzles.index + grid.columns);
@@ -65,7 +65,7 @@ GridLayout {
         Layout.fillWidth: puzzles.narrow; Layout.fillHeight: !puzzles.narrow; spacing: 10
         RowLayout {
             spacing: 10
-            ActionButton { objectName: "puzzlesBack"; theme: app; compact: true; icon: "←"; hint: "g"; onClicked: app.view = "" }
+            ActionButton { objectName: "puzzlesBack"; theme: app; compact: true; icon: "←"; hint: "⌫"; onClicked: app.navigateBack() }
             Text { text: "Puzzles"; color: app.fg; font { pixelSize: 18; weight: Font.DemiBold } }
         }
         ListView {

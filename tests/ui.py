@@ -31,7 +31,7 @@ TEST = r'''
             keyClick(Qt.Key_N);
             tryVerify(() => root.selectedId !== first, 5000);
             compare(root.game.san.length, 0);
-            keyClick(Qt.Key_G);
+            keyClick(Qt.Key_Backspace);
             verify(!root.game);
             root.listIndex = root.orderedGames.findIndex(g => g.id === first);
             keyClick(Qt.Key_Return);
@@ -49,7 +49,13 @@ TEST = r'''
             compare(root.game.san.length, 3);
             keyClick(Qt.Key_Escape);
             root.runCommand(":resign"); compare(root.confirmation, "resign");
+            const confirmedGame = root.selectedId;
+            keyClick(Qt.Key_Backspace); compare(root.selectedId, confirmedGame); compare(root.confirmation, "resign");
             keyClick(Qt.Key_Escape); compare(root.confirmation, "");
+            keyClick(Qt.Key_I); command.text = "Nf3"; command.cursorPosition = 3;
+            keyClick(Qt.Key_Backspace); compare(command.text, "Nf"); compare(root.selectedId, confirmedGame);
+            keyClick(Qt.Key_Escape);
+            keyClick(Qt.Key_G); compare(root.selectedId, confirmedGame);
             compare(root.game.status, "started");
             // Every keyboard action has an on-screen button.
             const click = name => { const item = findChild(pageLayout, name); verify(item && item.visible, name); mouseClick(item); };
@@ -66,9 +72,9 @@ TEST = r'''
             keyClick("["); tryVerify(() => root.viewPly === 2, 5000);
             compare(root.board[62], "N");
             root.selectSquare(52); verify(root.messageError); compare(root.origin, -1);
-            click("rewindStart"); compare(root.viewPly, 0); compare(root.board[52], "P");
+            keyClick(Qt.Key_Home); compare(root.viewPly, 0); compare(findChild(pageLayout, "rewindStart").hint, "Home"); compare(root.board[52], "P");
             click("rewindForward"); compare(root.viewPly, 1);
-            keyClick("}"); compare(root.viewPly, -1); compare(root.board[62], "");
+            keyClick(Qt.Key_End); compare(root.viewPly, -1); compare(root.board[62], "");
             // Engine: fake UCI engine, score from White's side (black to move, cp 35 -> -35).
             keyClick("e"); verify(root.engineOn);
             tryVerify(() => root.evalData && root.evalData.source === "FakeFish", 5000);
@@ -120,7 +126,9 @@ TEST = r'''
             keyClick(Qt.Key_Plus); compare(ps.customMinutes, 11); keyClick(Qt.Key_BracketLeft); compare(ps.customIncrement, 4);
             keyClick(Qt.Key_C); verify(!ps.customOpen);
             ps.mode = "computer"; compare(ps.shown.length, 11); verify(!findChild(pageLayout, "seekNote").visible); ps.mode = "opponent";
-            click("closePlayButton"); verify(!root.playVisible);
+            keyClick(Qt.Key_Escape); verify(root.playVisible);
+            keyClick(Qt.Key_Backspace); verify(!root.playVisible);
+            root.playVisible = true; click("closePlayButton"); verify(!root.playVisible);
             root.engineOn = false;
             root.rewind(1); tryVerify(() => root.viewPly === 1, 5000);
             boardFocus.forceActiveFocus(); keyClick("a");
@@ -134,7 +142,7 @@ TEST = r'''
             click("analyseButton"); tryVerify(() => root.selectedId !== branch, 5000);
             const alternate = root.selectedId;
             root.runCommand("e5"); tryVerify(() => root.game.san.length === 2, 5000);
-            boardFocus.forceActiveFocus(); keyClick("b");
+            boardFocus.forceActiveFocus(); keyClick(Qt.Key_Backspace);
             tryVerify(() => root.selectedId === branch && root.viewPly === 1, 5000);
             compare(root.game.san[1], "c5");
             verify(findChild(pageLayout, "variationList").count === 1);
@@ -154,7 +162,7 @@ TEST = r'''
             tryVerify(() => root.evalData && !root.evalPending, 5000);
             verify(root.evalData.best === "e7e5" || root.evalData.best === null);
             // Lobby: TV, daily puzzle and news (injected; the daemon's Lichess is unreachable here).
-            root.engineOn = false; keyClick(Qt.Key_G); verify(!root.game);
+            root.engineOn = false; keyClick(Qt.Key_Backspace); tryVerify(() => root.selectedId === first, 5000); keyClick(Qt.Key_Backspace); verify(!root.game);
             tryVerify(() => !!findChild(pageLayout, "lobbyView"), 5000);
             const lobby = findChild(pageLayout, "lobbyView");
             tryVerify(() => lobby.puzzleError && lobby.blogError, 10000);
@@ -225,14 +233,16 @@ TEST = r'''
             compare(tvv.watchedId, "tv000002");
             verify(root.serial >= beforeFollow + 2); compare(root.selectedId, ""); // unwatch, watch (+ score)
             root.tvEvent(featured, ""); compare(tvv.watchedId, "tv000001");
-            // "o" opens it on the main board; leaving the board returns to the TV page.
-            keyClick(Qt.Key_O);
+            // Enter opens the board, Backspace returns to its page. The old alias does nothing.
+            keyClick(Qt.Key_O); compare(root.selectedId, "");
+            keyClick(Qt.Key_Enter);
             tryVerify(() => root.selectedId === "tv000001", 5000);
             compare(root.orientation({id: "tv000001", color: null}), "black");
             root.watchOrientation["tv000002"] = "black"; compare(root.orientation({id: "tv000002", color: null}), "black");
             compare(root.orientation({id: "x", color: "black"}), "black");
-            root.selectedId = ""; tryVerify(() => !!findChild(pageLayout, "tvView"), 5000);
-            keyClick(Qt.Key_Escape); tryVerify(() => !!findChild(pageLayout, "lobbyView"), 5000);
+            keyClick(Qt.Key_Backspace); tryVerify(() => !!findChild(pageLayout, "tvView"), 5000);
+            keyClick(Qt.Key_Escape); verify(root.view !== "");
+            keyClick(Qt.Key_Backspace); tryVerify(() => !!findChild(pageLayout, "lobbyView"), 5000);
             root.games = root.games.filter(g => g.id !== "tv000001");
             // Broadcast browsing stays in TV; stale replies cannot replace the selected game.
             keyClick(Qt.Key_T);
@@ -255,32 +265,58 @@ TEST = r'''
             root.broadcastReply("round-fixture", "broadcast_round", {broadcast: {round: {id: "round001", name: "Round 1"}, games: [bg, Object.assign({}, bg, {id: "chapter2", name: "Gamma – Delta"})]}}, "");
             keyClick(Qt.Key_Return); tryVerify(() => !bv.historyRequest, 5000);
             compare(bv.selected.id, "chapter1"); compare(bv.clock(bg.players[0]), "2:03"); compare(bv.clock(bg.players[1]), "—");
+            keyClick(Qt.Key_O); verify(!Object.values(root.pending).includes("broadcast_open"));
+            compare(findChild(pageLayout, "broadcastAnalyse").hint, "a");
             bv.historyRequest = "moves-fixture";
             root.broadcastReply("old-request", "broadcast_game", {round: "round001", chapter: "chapter1", broadcast_game: {san: ["d4"]}}, "");
             verify(!bv.history);
             root.broadcastReply("moves-fixture", "broadcast_game", {round: "round001", chapter: "chapter1", broadcast_game: {san: ["e4", "e5"]}}, "");
             compare(bv.history.san.length, 2); compare(root.selectedId, "");
             verify(findChild(pageLayout, "broadcastAnalyse").enabled);
+            const broadcastTv = findChild(pageLayout, "tvView");
+            broadcastTv.contentY = Math.max(0, broadcastTv.contentHeight - broadcastTv.height);
             waitForRendering(findChild(pageLayout, "broadcastAnalyse"));
-            mouseClick(findChild(pageLayout, "broadcastAnalyse"));
+            keyClick(Qt.Key_A);
             const analysisRequest = root.testRequests.filter(r => r.cmd === "broadcast_open").pop();
             compare(analysisRequest.round, "round001"); compare(analysisRequest.chapter, "chapter1");
             tryVerify(() => !Object.values(root.pending).includes("broadcast_open"), 5000);
             pageLayout.grabToImage(result => result.saveToFile(Quickshell.env("GAMBITO_SCREENSHOT").replace(".png", "-broadcast.png"))); wait(100);
             keyClick(Qt.Key_J); keyClick(Qt.Key_Return); tryVerify(() => !bv.historyRequest, 5000);
             compare(bv.selected.id, "chapter2"); verify(!bv.history);
+            // Live events replace the board/history, results update filters, old subscriptions cannot win.
+            const subscription = bv.subscription;
+            const updated = Object.assign({}, bg, {id: "chapter2", lastMove: "e7e5", state: "playing", history: {san: ["e4", "e5"]}});
+            root.broadcastEvent({round: "round001", subscription: "old", game: updated});
+            verify(!bv.history);
+            root.broadcastEvent({round: "round001", subscription: subscription, game: updated});
+            compare(bv.history.san.length, 2); compare(bv.selected.lastMove, "e7e5");
+            keyClick(Qt.Key_2); compare(bv.gameFilter, "playing"); compare(bv.rows.length, 2);
+            root.broadcastEvent({round: "round001", subscription: subscription, game: Object.assign({}, updated, {state: "finished", status: "1-0"})});
+            compare(bv.rows.length, 1); compare(bv.selected.status, "1-0");
+            keyClick(Qt.Key_3); compare(bv.rows.length, 1); compare(bv.rows[0].id, "chapter2");
+            keyClick(Qt.Key_4); compare(bv.rows.length, 0);
+            root.broadcastEvent({round: "round001", subscription: subscription, game: Object.assign({}, bg, {id: "chapter3", lastMove: "", state: "waiting"})});
+            compare(bv.rows.length, 1); compare(bv.count("waiting"), 1);
+            root.broadcastEvent({round: "round001", subscription: subscription, connected: false, error: "Connection lost"});
+            verify(!bv.liveConnected); compare(bv.liveError, "Connection lost"); compare(bv.selected.status, "1-0");
+            keyClick(Qt.Key_1); compare(bv.rows.length, 3);
             keyClick(Qt.Key_Backspace); verify(!bv.round); verify(!!bv.tournament);
+            compare(bv.subscription, "");
             keyClick(Qt.Key_Backspace); verify(!bv.tournament);
             bv.request = "error-fixture";
             root.broadcastReply("error-fixture", "broadcasts", null, "Lichess rate limited requests (429); wait a minute");
             verify(bv.error.includes("429")); verify(bv.retryAt > Date.now());
-            keyClick(Qt.Key_B);
+            keyClick(Qt.Key_B); verify(!!findChild(pageLayout, "broadcastView"));
+            keyClick(Qt.Key_Backspace);
             tryVerify(() => !findChild(pageLayout, "broadcastView"), 5000);
             verify(!!root.tvOwner);
-            keyClick(Qt.Key_Escape);
+            keyClick(Qt.Key_Backspace);
             // Openings page: tree walking, tabs, database switch and opening examples/analysis.
             keyClick(Qt.Key_O); tryVerify(() => !!findChild(pageLayout, "openingsView"), 5000);
             const op = findChild(pageLayout, "openingsView");
+            keyClick("?"); verify(root.helpVisible);
+            keyClick(Qt.Key_Backspace); verify(root.helpVisible); compare(root.view, "openings");
+            keyClick(Qt.Key_Escape); verify(!root.helpVisible); compare(root.view, "openings");
             // Each load() gets an error reply here (no Lichess account); inject data only after it, or it would be cleared.
             const settle = () => tryVerify(() => op.error !== "", 5000);
             settle();
@@ -296,11 +332,14 @@ TEST = r'''
             keyClick(Qt.Key_L); compare(op.index, 1);
             keyClick(Qt.Key_H); keyClick(Qt.Key_Return);
             compare(op.line.length, 1); compare(op.line[0].uci, "e2e4"); compare(op.name, "King's Pawn Game");
+            keyClick(Qt.Key_U); keyClick(Qt.Key_B); keyClick(Qt.Key_G); compare(op.line.length, 1); compare(root.view, "openings");
             verify(op.request !== "");
             settle();
             op.result = {fen: afterE4, explorer: {white: 10, draws: 5, black: 5, opening: {eco: "B00", name: "King's Pawn Game"}, moves: [{san: "c5", uci: "c7c5", white: 5, draws: 2, black: 3, fen: afterE4, opening: {eco: "B20", name: "Sicilian Defense"}}], topGames: []}};
             compare(op.lineText(), "1. e4");
             keyClick(Qt.Key_Backspace); compare(op.line.length, 0);
+            op.line = [{uci: "e2e4", san: "e4", name: "King's Pawn Game"}];
+            keyClick(Qt.Key_Home); compare(op.line.length, 0);
             settle(); op.result = tree; wait(300);
             pageLayout.grabToImage(result => result.saveToFile(Quickshell.env("GAMBITO_SCREENSHOT").replace(".png", "-openings.png"))); wait(300);
             keyClick(Qt.Key_2); compare(op.tab, "examples"); compare(findChild(pageLayout, "openingsGames").count, 1);
@@ -310,7 +349,8 @@ TEST = r'''
             const beforeOpen = root.serial;
             op.openExample(0); compare(root.pending[String(beforeOpen + 1)], "analyse");
             tryVerify(() => root.messageError, 5000); // no Lichess here: the masters PGN can't be fetched
-            keyClick(Qt.Key_Escape); tryVerify(() => !!findChild(pageLayout, "lobbyView"), 5000);
+            keyClick(Qt.Key_Escape); verify(root.view !== "");
+            keyClick(Qt.Key_Backspace); tryVerify(() => !!findChild(pageLayout, "lobbyView"), 5000);
             // Puzzle themes page: categories, difficulty, starting a themed puzzle.
             keyClick(Qt.Key_Z); tryVerify(() => !!findChild(pageLayout, "puzzlesView"), 5000);
             const pz = findChild(pageLayout, "puzzlesView");
@@ -329,7 +369,8 @@ TEST = r'''
             keyClick(Qt.Key_Return); compare(root.pending[String(beforeTheme + 1)], "puzzle_next");
             tryVerify(() => root.messageError, 5000); // no Lichess here
             root.puzzleDifficulty = "normal";
-            keyClick(Qt.Key_Escape); tryVerify(() => !!findChild(pageLayout, "lobbyView"), 5000);
+            keyClick(Qt.Key_Escape); verify(root.view !== "");
+            keyClick(Qt.Key_Backspace); tryVerify(() => !!findChild(pageLayout, "lobbyView"), 5000);
             // Analysis boards live in Profile → Boards; delete one from there.
             verify(!root.orderedGames.some(g => g.analysis));
             keyClick(Qt.Key_P); tryVerify(() => !!findChild(pageLayout, "profileView"), 5000);
@@ -343,7 +384,7 @@ TEST = r'''
             keyClick(Qt.Key_X); compare(root.deleteTarget, branch); wait(100);
             click("listConfirmDelete" + pv.index);
             tryVerify(() => !root.games.some(g => g.id === branch), 5000);
-            keyClick(Qt.Key_Escape); tryVerify(() => !findChild(pageLayout, "profileView"), 5000); compare(root.view, "");
+            keyClick(Qt.Key_Backspace); tryVerify(() => !findChild(pageLayout, "profileView"), 5000); compare(root.view, "");
             keyClick(Qt.Key_P); tryVerify(() => !!findChild(pageLayout, "profileView"), 5000);
             // Injected Lichess data: chart, stats, history rows and result filter.
             const pv2 = findChild(pageLayout, "profileView");
@@ -384,7 +425,7 @@ TEST = r'''
             pv2.puzzleStats = null; keyClick(Qt.Key_1);
             wait(300);
             pageLayout.grabToImage(result => result.saveToFile(Quickshell.env("GAMBITO_SCREENSHOT").replace(".png", "-profile.png"))); wait(300);
-            root.account = null; keyClick(Qt.Key_G); tryVerify(() => !findChild(pageLayout, "profileView"), 5000);
+            root.account = null; keyClick(Qt.Key_Backspace); tryVerify(() => !findChild(pageLayout, "profileView"), 5000);
             // Lichess server analysis of a finished online game (injected; no network in UI tests).
             root.engineOn = false;
             const analysed = Object.assign({}, root.games.find(g => g.id === first), {id: "hist0001", online: true, status: "mate", color: "white",
@@ -480,6 +521,11 @@ TEST = r'''
             root.challenges = [{id:"invit001", direction:"in", challenger:{name:"Friend"}, destUser:{name:"Tester"}, variant:{key:"standard", name:"Standard"}, speed:"blitz", timeControl:{show:"3+2"}}];
             const invitations = findChild(pageLayout, "challengesView");
             keyClick(Qt.Key_U); verify(findChild(pageLayout, "challengeUsername").activeFocus);
+            const usernameField = findChild(pageLayout, "challengeUsername");
+            usernameField.text = "test"; usernameField.cursorPosition = 4;
+            keyClick(Qt.Key_Backspace); compare(usernameField.text, "tes"); compare(root.view, "challenges");
+            usernameField.text = "";
+            keyClick(Qt.Key_Backspace); compare(root.view, "challenges");
             keyClick(Qt.Key_Escape); verify(!findChild(pageLayout, "challengeUsername").activeFocus);
             const beforeAccept = root.serial;
             keyClick(Qt.Key_A); compare(root.testRequests.find(r => r.request_id === String(beforeAccept + 1)).cmd, "challenge_accept");

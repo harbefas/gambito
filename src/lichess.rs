@@ -221,6 +221,20 @@ impl Api {
         )
         .await
     }
+    pub async fn broadcast_stream(&self, round: &str) -> Result<reqwest::Response> {
+        Self::check(
+            self.client
+                .get(format!(
+                    "{}/api/stream/broadcast/round/{round}.pgn",
+                    self.base
+                ))
+                .bearer_auth(&self.token)
+                .header("Accept", "application/x-chess-pgn")
+                .send()
+                .await?,
+        )
+        .await
+    }
     /// Real-time seeks stream until paired; correspondence seeks return at once.
     pub async fn seek(&self, form: &[(&str, String)]) -> Result<()> {
         let response = Self::check(

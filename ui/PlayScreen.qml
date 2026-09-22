@@ -122,7 +122,7 @@ Rectangle {
             options: [["opponent", "Opponent"], ["computer", "Computer"]]
             onPicked: v => screen.mode = v
         }
-        ActionButton { objectName: "closePlayButton"; theme: screen.app; compact: true; label: "Close"; hint: "esc"; onClicked: screen.app.playVisible = false }
+        ActionButton { objectName: "closePlayButton"; theme: screen.app; compact: true; label: "Back"; hint: "⌫"; onClicked: screen.app.navigateBack() }
     }
 
     Flickable {

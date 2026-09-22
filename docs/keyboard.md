@@ -1,6 +1,8 @@
 # Keyboard
 
-Every clickable control has a key, and buttons show it. In the app, `?` shows these tables. Keys are case-sensitive.
+Every clickable control has a key, and buttons show it. In the app, `?` shows these tables. Keys are case-sensitive. Return and keypad Enter work alike.
+
+Navigation follows one rule: **Backspace goes back one level**, **Esc cancels**, **Enter opens or activates**, and **a creates analysis**. In a text field, Backspace deletes text. On an analysis branch, Backspace returns to its source; on a page, it goes up one level until the lobby.
 
 ## Everywhere
 
@@ -9,8 +11,8 @@ Every clickable control has a key, and buttons show it. In the app, `?` shows th
 | `i` | Type a move |
 | `:` | Command line |
 | `?` | Help |
-| `Esc` | Cancel selection, input or confirmation; leave a page |
-| `g` | Lobby |
+| `Esc` | Cancel selection, input, confirmation or sign-in; dismiss help |
+| Backspace | Back one level |
 | `n` | New local game |
 | `w` | New window |
 | `f` | Flip board |
@@ -39,7 +41,7 @@ Every clickable control has a key, and buttons show it. In the app, `?` shows th
 | `1`–`8` | Computer level |
 | Arrows or `hjkl`, Enter | Pick a time control or correspondence days, then play |
 | `c` | Custom clock: `-` `+` minutes, `[` `]` increment |
-| `Esc` | Close, or cancel the seek |
+| Backspace / `Esc` | Back (before starting a seek) / cancel the active seek |
 
 ## Board
 
@@ -48,12 +50,12 @@ Every clickable control has a key, and buttons show it. In the app, `?` shows th
 | `h` `j` `k` `l` / arrows | Move the cursor |
 | Enter / Space | Select a square |
 | `[` `]` | Previous / next move |
-| `{` `}` | Start / live position |
+| Home / End | Start / live position |
 | `e` | Engine on / off |
 | `-` `+` / `d` | Decrease / increase depth / type a depth |
 | `m` | Opening explorer on / off |
 | `a` | Analysis board from here (branch) |
-| `b` | Return to the source game |
+| Backspace | Source game if this is a branch; otherwise previous page |
 | `x` | Delete analysis board |
 | `r` | Load Lichess analysis |
 | `v` `u` `y` | Puzzle hint / solution / retry |
@@ -70,11 +72,12 @@ Every clickable control has a key, and buttons show it. In the app, `?` shows th
 | Page | Keys |
 |---|---|
 | Challenges | `u` username, `t` time, `c` color, `v` rated, `s` send, `j` `k` select, `a` accept, `x` decline or cancel, `r` refresh |
-| TV | `b` tournaments, `j` `k` channel, `o` or Enter open on board, `L` lichess.org, `z` zen |
-| Tournaments (in TV) | `j` `k` select, Enter open, Backspace back, `r` refresh, `o` analysis copy, `L` lichess.org, `b` TV channels |
-| Openings | Arrows or `hjkl` pick, Enter play, Backspace or `u` back, `b` start, `a` analyse, `m` database, `s` `r` filters, `1` `2` tabs |
+| TV | `b` tournaments (`1`–`4` game status filters), `j` `k` channel, Enter open on board, `L` lichess.org, `z` zen |
+| Tournaments (in TV) | `j` `k` select, Enter open, Backspace back, `r` refresh, `a` analysis copy, `L` lichess.org; Backspace from the tournament list returns to TV channels |
+| Openings | Arrows or `hjkl` pick, Enter play, Backspace back (lobby at the starting position), Home start, `a` analyse, `m` database, `s` `r` filters, `1` `2` tabs |
 | Puzzles | `[` `]` category, arrows or `hjkl` pick, Enter start, `d` difficulty |
 | Profile | `1`–`4` tabs, `j` `k` select, Enter open, `s` `r` `o` filters, `x` delete board, `l` sign out |
+| Study | `j` `k` select, Enter open, `e` starter chapters, `s` session, `m` add move, `r` review, `a` analyse |
 
 ## Commands
 

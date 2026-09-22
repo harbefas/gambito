@@ -49,7 +49,7 @@ ColumnLayout {
         tab = "continuations";
         load();
     }
-    function back() { if (line.length) { line = line.slice(0, -1); load(); } }
+    function back() { if (line.length) { line = line.slice(0, -1); load(); } else app.view = ""; }
     function toStart() { line = []; load(); }
     function cycleSpeed() { speedAt = (speedAt + 1) % speedOptions.length; load(); }
     function cycleRating() { ratingAt = (ratingAt + 1) % ratingOptions.length; load(); }
@@ -87,9 +87,9 @@ ColumnLayout {
             else if (key === "a") openings.analyse();
             else if (key === "s" && openings.db === "lichess") openings.cycleSpeed();
             else if (key === "r" && openings.db === "lichess") openings.cycleRating();
-            else if (key === "b" && openings.line.length) openings.toStart();
-            else if (event.key === Qt.Key_Backspace || key === "u") openings.back();
-            else if (event.key === Qt.Key_Return) { if (openings.tab === "continuations") openings.play(openings.index); else openings.openExample(openings.index); }
+            else if (event.key === Qt.Key_Home && openings.line.length) openings.toStart();
+            else if (event.key === Qt.Key_Backspace) openings.back();
+            else if ((event.key === Qt.Key_Return || event.key === Qt.Key_Enter)) { if (openings.tab === "continuations") openings.play(openings.index); else openings.openExample(openings.index); }
             else if (key === "l" || event.key === Qt.Key_Right) openings.index = Math.min(last, openings.index + 1);
             else if (key === "h" || event.key === Qt.Key_Left) openings.index = Math.max(0, openings.index - 1);
             else if (key === "j" || event.key === Qt.Key_Down) openings.index = Math.min(last, openings.index + (openings.tab === "continuations" ? columns : 1));
@@ -103,7 +103,7 @@ ColumnLayout {
 
     RowLayout {
         Layout.fillWidth: true; spacing: 10
-        ActionButton { objectName: "openingsBack"; theme: app; compact: true; icon: "←"; label: "Lobby"; hint: "g"; onClicked: app.view = "" }
+        ActionButton { objectName: "openingsBack"; theme: app; compact: true; icon: "←"; label: "Back"; hint: "⌫"; onClicked: app.navigateBack() }
         Text { text: "Openings"; color: app.fg; font { pixelSize: 18; weight: Font.DemiBold } }
         Item { Layout.fillWidth: true }
         Repeater {
@@ -147,8 +147,8 @@ ColumnLayout {
                 ResultBar { Layout.fillWidth: true; Layout.preferredHeight: 18; visible: openings.total > 0; stats: openings.book; theme: app }
                 Flow {
                     Layout.fillWidth: true; spacing: 6
-                    ActionButton { objectName: "openingsUndo"; theme: app; compact: true; icon: "‹"; label: "Back"; hint: "u"; enabled: openings.line.length > 0; opacity: enabled ? 1 : 0.4; onClicked: openings.back() }
-                    ActionButton { theme: app; compact: true; label: "Start"; hint: "b"; enabled: openings.line.length > 0; opacity: enabled ? 1 : 0.4; onClicked: openings.toStart() }
+                    ActionButton { objectName: "openingsUndo"; theme: app; compact: true; icon: "‹"; label: "Back"; hint: "⌫"; enabled: openings.line.length > 0; opacity: enabled ? 1 : 0.4; onClicked: app.navigateBack() }
+                    ActionButton { theme: app; compact: true; label: "Start"; hint: "Home"; enabled: openings.line.length > 0; opacity: enabled ? 1 : 0.4; onClicked: openings.toStart() }
                     ActionButton { objectName: "openingsAnalyse"; theme: app; compact: true; icon: "⤢"; label: "Analyse"; hint: "a"; onClicked: openings.analyse() }
                 }
             }

@@ -1,7 +1,9 @@
+mod broadcast;
 mod engine;
 mod game;
 mod lichess;
 mod server;
+mod study;
 
 use anyhow::{Context, Result, bail};
 use clap::{Parser, Subcommand};
