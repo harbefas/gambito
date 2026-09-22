@@ -12,7 +12,7 @@ Flickable {
     required property Item focusScope
     anchors.fill: parent
     // Stacked in a narrow pane the panel doesn't fit under the board, so the page scrolls.
-    clip: true; contentWidth: width; contentHeight: tournaments ? broadcastLoader.height : page.height
+    clip: true; contentWidth: width; contentHeight: tournaments ? broadcastLoader.height : page.height + tvHeader.height + 12
     boundsBehavior: Flickable.StopAtBounds
     ScrollBar.vertical: ScrollBar { }
 
@@ -87,10 +87,27 @@ Flickable {
         if (tournaments) { app.zen = false; follow(""); }
     }
 
+    PageHeader {
+        id: tvHeader
+        visible: !tvView.tournaments
+        width: tvView.width
+        theme: tvView.app
+        title: "Lichess TV"
+        subtitle: tvView.game ? [tvView.channelInfo[tvView.index][1], tvView.game.speed, tvView.game.rated ? "rated" : "casual"].filter(x => x).join(" · ") : "Live games streamed as they happen."
+        secondaryLabel: "Tournaments"
+        secondaryHint: "b"
+        primaryLabel: "Zen"
+        primaryHint: "z"
+        onBackRequested: tvView.app.navigateBack()
+        onSecondaryRequested: tvView.tournaments = true
+        onPrimaryRequested: tvView.app.zen = !tvView.app.zen
+    }
+
     GridLayout {
         id: page
         visible: !tvView.tournaments
         width: tvView.width
+        y: tvHeader.height + 12
         height: Math.max(tvView.height, implicitHeight)
         columns: tvView.narrow ? 1 : 2; columnSpacing: app.zen ? 0 : 20; rowSpacing: app.zen ? 0 : 12
 
@@ -126,17 +143,6 @@ Flickable {
             ColumnLayout {
                 id: sidebar
                 anchors { fill: parent; margins: 14 } spacing: 10
-                RowLayout {
-                    Layout.fillWidth: true; spacing: 10
-                    ActionButton { objectName: "tvBack"; theme: app; compact: true; icon: "←"; hint: "⌫"; onClicked: app.navigateBack() }
-                    Column {
-                        Layout.fillWidth: true; spacing: 1
-                        Text { width: parent.width; elide: Text.ElideRight; text: "Lichess TV · " + tvView.channelInfo[tvView.index][1]; color: app.fg; font { pixelSize: 15; weight: Font.DemiBold } }
-                        Text { width: parent.width; elide: Text.ElideRight; text: tvView.game ? [tvView.game.speed, tvView.game.rated ? "rated" : "casual", "move " + (Math.floor(tvView.game.san.length / 2) + 1)].filter(x => x).join(" · ") : "Live"; color: app.muted; font.pixelSize: 11 }
-                    }
-                    ActionButton { objectName: "tvZen"; theme: app; compact: true; icon: "⤢"; hint: "z"; onClicked: app.zen = true }
-                }
-                ActionButton { objectName: "tvTournaments"; Layout.fillWidth: true; theme: app; label: "Tournaments"; hint: "b"; onClicked: tvView.tournaments = true }
                 // Head-to-head score of the two players.
                 Rectangle {
                     Layout.fillWidth: true; implicitHeight: 34; radius: 10; color: app.bg; border.width: 1; border.color: app.line

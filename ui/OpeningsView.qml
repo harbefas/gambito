@@ -101,10 +101,14 @@ ColumnLayout {
     }
     Component.onDestruction: if (app.viewKeys) app.viewKeys = null
 
+    PageHeader {
+        theme: openings.app
+        title: "Openings"
+        subtitle: openings.db === "masters" ? "Explore master games and opening ideas." : "Explore Lichess games by speed and rating."
+        onBackRequested: openings.app.navigateBack()
+    }
     RowLayout {
-        Layout.fillWidth: true; spacing: 10
-        ActionButton { objectName: "openingsBack"; theme: app; compact: true; icon: "←"; label: "Back"; hint: "⌫"; onClicked: app.navigateBack() }
-        Text { text: "Openings"; color: app.fg; font { pixelSize: 18; weight: Font.DemiBold } }
+        Layout.fillWidth: true; spacing: 8
         Item { Layout.fillWidth: true }
         Repeater {
             model: [["masters", "Masters"], ["lichess", "Lichess"]]

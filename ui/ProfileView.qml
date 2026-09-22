@@ -141,33 +141,29 @@ Flickable {
         height: Math.max(profile.height, implicitHeight)
         spacing: profile.width < 560 ? 10 : 14
 
-        // Header: identity and lifetime totals.
-        RowLayout {
-            Layout.fillWidth: true; spacing: 14
-            ActionButton { objectName: "profileBack"; theme: app; compact: true; icon: "←"; label: "Back"; hint: "⌫"; onClicked: app.navigateBack() }
-            Column {
-                // Elides instead of pushing the buttons and totals out of the window.
-                Layout.fillWidth: true; Layout.minimumWidth: 80; Layout.preferredWidth: 0; spacing: 2
-                Text { width: parent.width; elide: Text.ElideRight; text: app.account ? app.account.username : "Local profile"; color: app.fg; font { pixelSize: 20; weight: Font.DemiBold } }
-                Text {
-                    width: parent.width; elide: Text.ElideRight
-                    text: !app.account ? "Connect Lichess for ratings, history and activity." : !profile.info ? "Loading…"
-                        : "Member since " + profile.date(profile.info.account.createdAt) + " · " + profile.duration(profile.info.account.playTime.total) + " played"
-                    color: app.muted; font.pixelSize: 12
-                }
-            }
-            ActionButton { objectName: "challengesButton"; theme: app; label: "Challenges" + (app.challenges.length ? " (" + app.challenges.length + ")" : ""); hint: "C"; onClicked: app.runCommand(":challenges") }
-            ActionButton { objectName: "profileSignOut"; visible: !!app.account; theme: app; compact: true; label: "Sign out"; hint: "l"; onClicked: app.runCommand(":logout") }
-            Row {
-                // Lifetime totals are extra: narrow panes keep the header to identity and actions.
-                visible: !!profile.info && profile.width >= 900; spacing: 18
-                Repeater {
-                    model: profile.info ? [["Games", profile.info.account.count.all], ["Wins", profile.info.account.count.win], ["Draws", profile.info.account.count.draw], ["Losses", profile.info.account.count.loss]] : []
-                    Column {
-                        required property var modelData
-                        Text { text: modelData[1]; color: app.fg; font { family: app.mono; pixelSize: 16; weight: Font.DemiBold } }
-                        Text { text: modelData[0]; color: app.muted; font.pixelSize: 11 }
-                    }
+        PageHeader {
+            theme: profile.app
+            title: app.account ? app.account.username : "Local profile"
+            subtitle: !app.account ? "Connect Lichess for ratings, history and activity." : !profile.info ? "Loading…"
+                : "Member since " + profile.date(profile.info.account.createdAt) + " · " + profile.duration(profile.info.account.playTime.total) + " played"
+            secondaryLabel: "Challenges" + (app.challenges.length ? " (" + app.challenges.length + ")" : "")
+            secondaryHint: "C"
+            primaryLabel: app.account ? "Sign out" : ""
+            primaryHint: "l"
+            onBackRequested: app.navigateBack()
+            onSecondaryRequested: app.runCommand(":challenges")
+            onPrimaryRequested: app.runCommand(":logout")
+        }
+        Row {
+            Layout.fillWidth: true
+            visible: !!profile.info && profile.width >= 900
+            spacing: 18
+            Repeater {
+                model: profile.info ? [["Games", profile.info.account.count.all], ["Wins", profile.info.account.count.win], ["Draws", profile.info.account.count.draw], ["Losses", profile.info.account.count.loss]] : []
+                Column {
+                    required property var modelData
+                    Text { text: modelData[1]; color: app.fg; font { family: app.mono; pixelSize: 16; weight: Font.DemiBold } }
+                    Text { text: modelData[0]; color: app.muted; font.pixelSize: 11 }
                 }
             }
         }
