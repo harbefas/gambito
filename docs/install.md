@@ -42,6 +42,22 @@ After updating:
 - **Binary:** restart the service with `systemctl --user restart gambito`.
 - **UI:** copy `ui/*.qml` again, and delete any files that were removed from `ui/`. Quickshell loads the QML when it starts, so close every Gambito window before reopening.
 
+## Published releases and updates
+
+For a machine that does not need a Rust toolchain, download the latest release and run the installer from the repository:
+
+```sh
+./scripts/install.sh
+```
+
+Published releases include the binary, QML UI and SHA-256 checksums. Once Gambito is installed from a release, update it with:
+
+```sh
+gambito update
+```
+
+The updater validates the checksum, replaces the installed binary and UI, and restarts the user service if it was running. Local games, studies, tokens and themes stay in their existing XDG directories. Updates are explicit, so a running game is never interrupted without the user asking for it.
+
 ## Open it
 
 The desktop entry puts Gambito in any app launcher: the Omarchy menu, Walker, fuzzel, rofi or your Quickshell launcher.

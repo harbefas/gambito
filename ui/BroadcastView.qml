@@ -236,7 +236,7 @@ ColumnLayout {
             }
         }
         ColumnLayout {
-            visible: !!root.selected; Layout.fillWidth: true; Layout.fillHeight: true; Layout.preferredWidth: 560; spacing: 8
+            visible: !!root.selected; Layout.fillWidth: true; Layout.fillHeight: true; Layout.preferredWidth: 560; Layout.topMargin: root.narrow ? 0 : -112; spacing: 8
             Repeater {
                 model: root.selected ? [1] : []
                 delegate: Text {

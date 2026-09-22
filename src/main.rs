@@ -4,6 +4,7 @@ mod game;
 mod lichess;
 mod server;
 mod study;
+mod update;
 
 use anyhow::{Context, Result, bail};
 use clap::{Parser, Subcommand};
@@ -25,6 +26,8 @@ struct Args {
 #[derive(Subcommand)]
 enum Command {
     Daemon,
+    /// Download and install the latest published release
+    Update,
     /// Read token from stdin, validate on Lichess, save with mode 0600
     Auth,
     List,
@@ -202,6 +205,7 @@ async fn main() -> Result<()> {
     let args = Args::parse();
     let cmd = match args.command {
         Command::Daemon => return server::run().await,
+        Command::Update => return update::run().await,
         Command::Auth => {
             eprintln!(
                 "Lichess token with board:play and challenge:write; paste and finish with Ctrl-D:"

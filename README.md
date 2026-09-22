@@ -57,6 +57,8 @@ cargo build --release
 
 `gambito open` starts the daemon when needed and opens the lobby. Press **Connect Lichess** (`l`) to sign in through your browser; local games, TV, puzzles and news work without an account. To install it for your user (systemd service, launcher entry, Omarchy or Hyprland keybinding, theme), see [Install](docs/install.md).
 
+Published builds can be installed with `./scripts/install.sh` and updated later with `gambito update`; source checkouts can continue using `git pull` and `cargo build --release`.
+
 ## Keys you'll use first
 
 | Key | Action | Key | Action |
