@@ -409,11 +409,20 @@ Flickable {
                                 text: explorerCard.book && explorerCard.book.opening ? explorerCard.book.opening.eco + " " + explorerCard.book.opening.name : ""
                             }
                         }
-                        Text {
-                            visible: !explorerCard.book; Layout.fillWidth: true; wrapMode: Text.WordWrap; color: app.muted; font.pixelSize: 12
-                            text: app.explorerData && app.explorerData.error ? app.explorerData.error : "Loading…"
+                        EmptyState {
+                            Layout.fillWidth: true
+                            visible: !explorerCard.book
+                            theme: boardView.app
+                            title: app.explorerData && app.explorerData.error ? "Explorer unavailable" : "Loading explorer…"
+                            detail: app.explorerData && app.explorerData.error ? app.explorerData.error : "Fetching opening statistics for this position."
                         }
-                        Text { visible: !!explorerCard.book && explorerCard.total === 0; text: "No games from this position"; color: app.muted; font.pixelSize: 12 }
+                        EmptyState {
+                            Layout.fillWidth: true
+                            visible: !!explorerCard.book && explorerCard.total === 0
+                            theme: boardView.app
+                            title: "No games from this position"
+                            detail: "Try an earlier position or switch databases."
+                        }
                         ListView {
                             id: explorerList
                             objectName: "explorerList"

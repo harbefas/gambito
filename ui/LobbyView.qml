@@ -231,7 +231,13 @@ Flickable {
                         lastMove: !lobby.puzzle ? "" : lobby.step === 0 ? lobby.puzzle.last_move || "" : lobby.puzzle.solution[lobby.step - 1]
                         selected: lobby.pick
                         onSquareClicked: index => lobby.puzzleClick(index)
-                        Text { anchors.centerIn: parent; visible: !lobby.puzzle; text: lobby.puzzleError ? "Puzzle unavailable" : "Loading…"; color: app.muted; font.pixelSize: 12 }
+                        EmptyState {
+                            anchors.fill: parent
+                            visible: !lobby.puzzle
+                            theme: lobby.app
+                            title: lobby.puzzleError ? "Puzzle unavailable" : "Loading…"
+                            detail: lobby.puzzleError ? "Try again later." : "Fetching today’s position…"
+                        }
                     }
                     Text {
                         objectName: "puzzleStatus"
@@ -274,7 +280,13 @@ Flickable {
                         selected: index === lobby.app.listIndex
                         onHovered: lobby.app.listIndex = index
                     }
-                    Text { anchors.verticalCenter: parent.verticalCenter; x: 4; visible: gameList.count === 0; text: "No games in progress. History and analysis boards are in your profile (p)."; color: app.muted; font.pixelSize: 12 }
+                    EmptyState {
+                        anchors.fill: parent
+                        visible: gameList.count === 0
+                        theme: lobby.app
+                        title: "No games in progress"
+                        detail: "History and analysis boards are in your profile."
+                    }
                 }
             }
 
@@ -316,7 +328,13 @@ Flickable {
                             }
                         }
                     }
-                    Text { anchors.centerIn: parent; visible: news.count === 0; text: lobby.blogError ? "News unavailable" : "Loading…"; color: app.muted; font.pixelSize: 12 }
+                    EmptyState {
+                        anchors.fill: parent
+                        visible: news.count === 0
+                        theme: lobby.app
+                        title: lobby.blogError ? "News unavailable" : "Loading…"
+                        detail: lobby.blogError ? "The news feed could not be reached." : "Fetching the latest chess news…"
+                    }
                 }
             }
         }

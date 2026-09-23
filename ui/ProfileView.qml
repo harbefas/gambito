@@ -239,7 +239,13 @@ Flickable {
                             PathPolyline { path: chart.pts.map(p => Qt.point(chart.px(p.t), chart.py(p.r))) }
                         }
                     }
-                    Text { anchors.centerIn: parent; visible: chart.pts.length === 0; text: profile.info ? "No rated games at this speed yet" : "Loading…"; color: app.muted; font.pixelSize: 12 }
+                    EmptyState {
+                        anchors.fill: parent
+                        visible: chart.pts.length === 0
+                        theme: profile.app
+                        title: profile.info ? "No rated games at this speed yet" : "Loading…"
+                        detail: profile.info ? "Choose another time control to compare your progress." : "Fetching rating history…"
+                    }
 
                     // Hover: crosshair, marker and tooltip on the nearest point.
                     Rectangle { visible: chart.hover >= 0; x: chart.hover >= 0 ? chart.px(chart.pts[chart.hover].t) : 0; width: 1; height: chart.height; color: app.mix(app.line, app.fg, 0.3) }
@@ -302,7 +308,13 @@ Flickable {
                         }
                     }
                 }
-                Text { anchors.centerIn: parent; visible: !statsCard.st; text: "Loading…"; color: app.muted; font.pixelSize: 12 }
+                EmptyState {
+                    anchors.fill: parent
+                    visible: !statsCard.st
+                    theme: profile.app
+                    title: "Loading statistics…"
+                    detail: "Fetching performance data for this time control."
+                }
             }
         }
 
@@ -365,10 +377,12 @@ Flickable {
                 width: list.width; height: profile.loading ? 36 : 0
                 Text { anchors.centerIn: parent; visible: profile.loading; text: "Loading…"; color: app.muted; font.pixelSize: 12 }
             }
-            Text {
-                anchors.centerIn: parent; visible: list.count === 0 && !profile.loading && profile.tab !== "puzzles"
-                text: profile.tab === "games" ? (profile.resultFilter && profile.rows.length ? "No matching games loaded" : "No games") : profile.tab === "boards" ? "No analysis boards or finished local games" : "No recent activity"
-                color: app.muted; font.pixelSize: 13
+            EmptyState {
+                anchors.fill: parent
+                visible: list.count === 0 && !profile.loading && profile.tab !== "puzzles"
+                theme: profile.app
+                title: profile.tab === "games" ? (profile.resultFilter && profile.rows.length ? "No matching games loaded" : "No games") : profile.tab === "boards" ? "No analysis boards or finished local games" : "No recent activity"
+                detail: profile.tab === "games" ? "Your completed games will appear here." : profile.tab === "boards" ? "Open a game or save a position to build your analysis library." : "Activity will appear here as you play."
             }
         }
 

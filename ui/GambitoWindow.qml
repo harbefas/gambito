@@ -696,12 +696,16 @@ Scope {
                 PlayScreen { id: playScreen; objectName: "playScreen"; anchors.fill: parent; app: root; visible: root.playVisible; z: 5 }
                 Rectangle {
                     anchors.fill: parent; visible: root.helpVisible; color: root.bg; z: 6
-                    RowLayout {
+                    PageHeader {
                         id: helpHeader
+                        theme: root
                         anchors { left: parent.left; right: parent.right; top: parent.top }
-                        Text { text: "Keyboard & commands"; color: root.fg; font { pixelSize: 18; weight: Font.DemiBold } }
-                        Item { Layout.fillWidth: true }
-                        ActionButton { objectName: "closeHelpButton"; theme: root; compact: true; label: "Close"; hint: "esc"; onClicked: root.helpVisible = false }
+                        title: "Keyboard & commands"
+                        subtitle: "Navigate Gambito without leaving the keyboard."
+                        backLabel: "Close"
+                        backHint: "esc"
+                        backObjectName: "closeHelpButton"
+                        onBackRequested: root.helpVisible = false
                     }
                     Flickable {
                         anchors { left: parent.left; right: parent.right; top: helpHeader.bottom; bottom: parent.bottom; topMargin: 24 }
