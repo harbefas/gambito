@@ -227,19 +227,22 @@ Flickable {
             ColumnLayout {
                 id: panelColumn
                 anchors { fill: parent; margins: 14 } spacing: 10
-                RowLayout {
-                    Layout.fillWidth: true; spacing: 10
-                    ActionButton { objectName: "gamesButton"; visible: !app.game || !app.game.analysis_source; theme: app; compact: true; icon: "←"; hint: "⌫"; onClicked: app.navigateBack() }
-                    ActionButton { objectName: "sourceButton"; visible: !!app.game && !!app.game.analysis_source; theme: app; compact: true; icon: "←"; label: "Source"; hint: "⌫"; onClicked: app.navigateBack() }
-                    Column {
-                        Layout.fillWidth: true; spacing: 1
-                        Text { width: parent.width; text: app.statusText(); color: app.fg; elide: Text.ElideRight; font { pixelSize: 15; weight: Font.DemiBold } }
-                        Text { width: parent.width; elide: Text.ElideRight; text: app.gameInfo(); color: app.muted; font.pixelSize: 11 }
+                PageHeader {
+                    theme: boardView.app
+                    title: app.statusText()
+                    subtitle: app.gameInfo()
+                    backLabel: app.game && app.game.analysis_source ? "Source" : "Back"
+                    backObjectName: app.game && app.game.analysis_source ? "sourceButton" : "gamesButton"
+                    onBackRequested: app.navigateBack()
+                    trailingContent: Component {
+                        RowLayout {
+                            spacing: 6
+                            ActionButton { objectName: "deleteBoardButton"; visible: !!app.game && app.game.analysis; theme: app; compact: true; kind: "danger"; icon: "✕"; hint: "x"; onClicked: app.confirmDelete(app.selectedId) }
+                            ActionButton { objectName: "studyCaptureButton"; visible: !!app.game && !app.isActive(app.game); theme: app; compact: true; label: "Study"; hint: "S"; onClicked: app.send("study_capture", {ply: app.shownPly()}) }
+                            ActionButton { objectName: "zenButton"; theme: app; compact: true; icon: "⤢"; hint: "z"; onClicked: app.zen = true }
+                            ActionButton { objectName: "helpButton"; theme: app; compact: true; icon: "?"; hint: ""; onClicked: app.helpVisible = true }
+                        }
                     }
-                    ActionButton { objectName: "deleteBoardButton"; visible: !!app.game && app.game.analysis; theme: app; compact: true; kind: "danger"; icon: "✕"; hint: "x"; onClicked: app.confirmDelete(app.selectedId) }
-                    ActionButton { objectName: "studyCaptureButton"; visible: !!app.game && !app.isActive(app.game); theme: app; compact: true; label: "Study"; hint: "S"; onClicked: app.send("study_capture", {ply: app.shownPly()}) }
-                    ActionButton { objectName: "zenButton"; theme: app; compact: true; icon: "⤢"; hint: "z"; onClicked: app.zen = true }
-                    ActionButton { objectName: "helpButton"; theme: app; compact: true; icon: "?"; hint: ""; onClicked: app.helpVisible = true }
                 }
                 RowLayout {
                     Layout.fillWidth: true
