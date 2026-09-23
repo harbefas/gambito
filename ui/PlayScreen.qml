@@ -109,20 +109,23 @@ Rectangle {
         }
     }
 
-    RowLayout {
+    PageHeader {
         id: header
         anchors { left: parent.left; right: parent.right; top: parent.top }
-        spacing: 12
-        // The title gives way first: the mode switch and Close must stay reachable in narrow panes.
-        Text { Layout.fillWidth: true; Layout.preferredWidth: 0; elide: Text.ElideRight; text: "Play online"; color: screen.app.fg; font { pixelSize: 18; weight: Font.DemiBold } }
-        Segmented {
-            objectName: "modeSwitch"
-            hint: "m"
-            theme: screen.app; value: screen.mode
-            options: [["opponent", "Opponent"], ["computer", "Computer"]]
-            onPicked: v => screen.mode = v
+        theme: screen.app
+        title: "Play online"
+        backObjectName: "closePlayButton"
+        subtitle: screen.mode === "computer" ? "Practice against Stockfish." : "Choose a time control and find an opponent."
+        trailingContent: Component {
+            Segmented {
+                objectName: "modeSwitch"
+                hint: "m"
+                theme: screen.app; value: screen.mode
+                options: [["opponent", "Opponent"], ["computer", "Computer"]]
+                onPicked: v => screen.mode = v
+            }
         }
-        ActionButton { objectName: "closePlayButton"; theme: screen.app; compact: true; label: "Back"; hint: "⌫"; onClicked: screen.app.navigateBack() }
+        onBackRequested: screen.app.navigateBack()
     }
 
     Flickable {

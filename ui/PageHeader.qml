@@ -8,10 +8,12 @@ RowLayout {
     property string subtitle: ""
     property string backLabel: "Back"
     property string backHint: "⌫"
+    property string backObjectName: "pageBack"
     property string secondaryLabel: ""
     property string secondaryHint: ""
     property string primaryLabel: ""
     property string primaryHint: ""
+    property Component trailingContent: null
     signal backRequested()
     signal secondaryRequested()
     signal primaryRequested()
@@ -19,7 +21,7 @@ RowLayout {
     spacing: 10
 
     ActionButton {
-        objectName: "pageBack"
+        objectName: header.backObjectName
         theme: header.theme
         compact: true
         label: header.backLabel
@@ -45,6 +47,13 @@ RowLayout {
             elide: Text.ElideRight
         }
     }
+    Loader {
+        visible: header.trailingContent !== null
+        active: visible
+        sourceComponent: header.trailingContent
+        Layout.preferredWidth: item ? item.implicitWidth : 0
+        Layout.preferredHeight: item ? item.implicitHeight : 0
+    }
     ActionButton {
         visible: header.secondaryLabel !== ""
         theme: header.theme
@@ -63,4 +72,3 @@ RowLayout {
         onClicked: header.primaryRequested()
     }
 }
-
