@@ -264,11 +264,7 @@ Flickable {
                 Layout.columnSpan: lobby.mode === "split" ? 2 : 1
                 Layout.preferredWidth: lobby.mode === "row" ? lobby.sideWidth : -1
                 Layout.fillWidth: true; Layout.alignment: Qt.AlignTop; spacing: 10
-                RowLayout {
-                    spacing: 8
-                    Text { text: "In progress"; color: app.fg; font { pixelSize: 14; weight: Font.DemiBold } }
-                    Text { text: gameList.count; color: app.muted; font { family: app.mono; pixelSize: 12 } }
-                }
+                SectionHeader { theme: lobby.app; title: "In progress"; count: String(gameList.count) }
                 ListView {
                     id: gameList
                     Layout.fillWidth: true; Layout.preferredHeight: Math.max(40, Math.min(count, 3) * 62); clip: true; spacing: 4
@@ -297,7 +293,7 @@ Flickable {
                 Layout.columnSpan: lobby.mode === "split" ? 2 : 1
                 Layout.preferredWidth: lobby.mode === "row" ? lobby.sideWidth : -1
                 Layout.fillWidth: true; Layout.fillHeight: lobby.mode === "row"; spacing: 10
-                Text { text: "News"; color: app.fg; font { pixelSize: 14; weight: Font.DemiBold } }
+                SectionHeader { theme: lobby.app; title: "News"; detail: "Lichess and community" }
                 ListView {
                     id: news
                     objectName: "newsList"
