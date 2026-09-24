@@ -53,13 +53,15 @@ For a machine that does not need a Rust toolchain, download the latest release a
 ./scripts/install.sh
 ```
 
-Published releases include the binary, QML UI and SHA-256 checksums. Once Gambito is installed from a release, update it with:
+Published releases include the Rust daemon, Qt host, QML UI and SHA-256 checksums. Once Gambito is installed from a release, update it with:
 
 ```sh
 gambito update
 ```
 
-The updater validates the checksum, replaces the installed binary and UI, and restarts the user service if it was running. Local games, studies, tokens and themes stay in their existing XDG directories. Updates are explicit, so a running game is never interrupted without the user asking for it.
+The updater validates the checksum, replaces both installed binaries and the Qt UI, and restarts the user service if it was running. Local games, studies, tokens and themes stay in their existing XDG directories. Updates are explicit, so a running game is never interrupted without the user asking for it.
+
+If you are upgrading an older QuickShell installation, run `./scripts/install.sh` once first so `gambito-qt` and the new `qt-ui` directory are installed. After that first migration, `gambito update` remains the normal update flow.
 
 For a source checkout, build the standalone Qt host:
 
