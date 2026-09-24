@@ -8,6 +8,7 @@ Window {
     property size minimumSize: Qt.size(0, 0)
     minimumWidth: minimumSize.width
     minimumHeight: minimumSize.height
+    Component.onCompleted: floating.show()
     signal closed()
     onClosing: floating.closed()
 }

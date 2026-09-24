@@ -97,7 +97,6 @@ int main(int argc, char **argv) {
 
     const auto root = QCoreApplication::applicationDirPath() + QStringLiteral("/../share/gambito/qt-ui/GambitoWindow.qml");
     const auto source = QFile::exists(root) ? root : QStringLiteral("standalone/ui/GambitoWindow.qml");
-    std::fprintf(stderr, "Loading standalone UI: %s\n", source.toUtf8().constData());
     engine.load(QUrl::fromLocalFile(QFileInfo(source).absoluteFilePath()));
     if (engine.rootObjects().isEmpty()) return 1;
     if (const auto game = qEnvironmentVariable("GAMBITO_GAME"); !game.isEmpty())
