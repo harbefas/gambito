@@ -22,6 +22,21 @@
 - **Window** (`GambitoWindow.qml`): socket, keys, command bar and help. Pages are `Loader`s, active only while shown: `LobbyView`, `BoardView`, `ProfileView`, `TvView`, `OpeningsView`, `PuzzlesView`, `ChallengesView`.
 - **Shared components:** `ActionButton`, `ThemedTextField`, `ThemedComboBox`, `GameRow`, `MiniBoard`, `TvBoard`, `ResultBar`, `ChatPanel`, `PlayScreen`.
 
+### Standalone Qt host
+
+The `standalone/` directory contains the migration path to Qt Quick without
+QuickShell. It reuses the Rust daemon and Unix socket protocol and provides a
+small `QQmlApplicationEngine` host plus a Qt `QLocalSocket` bridge. Build it
+with:
+
+```sh
+cmake -S standalone -B target/qt-build -DCMAKE_BUILD_TYPE=Release
+cmake --build target/qt-build -j2
+```
+
+The QuickShell launcher remains the default while window management, theme
+watching and multi-window IPC are migrated to the standalone host.
+
 ## Memory
 
 Measured per process (anonymous memory): lobby ~52 MB, board ~72 MB, openings ~63 MB; the state broadcast is ~5 KB. What keeps it there:
