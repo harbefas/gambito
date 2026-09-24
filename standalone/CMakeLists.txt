@@ -12,3 +12,5 @@ target_link_libraries(gambito-qt PRIVATE Qt6::Core Qt6::Gui Qt6::Qml Qt6::Quick 
 
 install(TARGETS gambito-qt RUNTIME DESTINATION bin)
 install(DIRECTORY ui/ DESTINATION share/gambito/qt-ui FILES_MATCHING PATTERN "*.qml" PATTERN "qmldir")
+install(FILES ../packaging/gambito-qt.desktop DESTINATION share/applications)
+install(FILES ../packaging/gambito.svg DESTINATION share/icons/hicolor/scalable/apps)

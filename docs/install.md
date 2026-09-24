@@ -58,6 +58,17 @@ gambito update
 
 The updater validates the checksum, replaces the installed binary and UI, and restarts the user service if it was running. Local games, studies, tokens and themes stay in their existing XDG directories. Updates are explicit, so a running game is never interrupted without the user asking for it.
 
+For desktops that do not use QuickShell, build the standalone Qt host:
+
+```sh
+cmake -S standalone -B target/qt-build -DCMAKE_BUILD_TYPE=Release
+cmake --build target/qt-build -j2
+cmake --install target/qt-build --prefix "$HOME/.local"
+```
+
+This installs `gambito-qt` and a desktop entry while keeping the same Rust
+daemon, data directories and Unix socket protocol.
+
 ## Open it
 
 The desktop entry puts Gambito in any app launcher: the Omarchy menu, Walker, fuzzel, rofi or your Quickshell launcher.

@@ -1,0 +1,9 @@
+[Desktop Entry]
+Name=Gambito (Qt)
+Comment=Keyboard-first Lichess client
+Exec=gambito-qt
+Icon=gambito
+Type=Application
+Categories=Game;BoardGame;Qt;
+Terminal=false
+StartupWMClass=gambito

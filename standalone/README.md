@@ -12,6 +12,16 @@ cmake --build target/qt-build -j2
 QT_QPA_PLATFORM=offscreen timeout 5s target/qt-build/gambito-qt
 ```
 
+Install it for the current user with:
+
+```sh
+cmake --install target/qt-build --prefix "$HOME/.local"
+```
+
+The installed `gambito-qt` entry uses the same Rust daemon service and can be
+launched from any desktop menu. Pass a game id as the first argument to open it
+directly, for example `gambito-qt abc12345`.
+
 The current host is intentionally parallel to the QuickShell launcher while the
 remaining host-specific features (multiple windows, live theme file watching and
 desktop integration) are moved across. The daemon, QML views and IPC messages
