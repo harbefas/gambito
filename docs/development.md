@@ -3,8 +3,8 @@
 ## Architecture
 
 ```
-┌──────────────── Quickshell process ────────────────┐
-│  shell.qml ── GambitoWindow ×N ── views (Loader)   │      gambito CLI
+┌──────────────────── Qt Quick host ─────────────────┐
+│  gambito-qt ── GambitoWindow ×N ── views (Loader)  │      gambito CLI
 └───────────────────────┬────────────────────────────┘          │
                         │ JSON lines over a Unix socket          │
                 ┌───────┴─────────────────────────────────────────┴──┐
@@ -18,30 +18,29 @@
 ```
 
 - **Daemon** (`src/`): owns every game, sends `state` to all connections and answers commands per connection with `request_id`. `main.rs` holds the CLI, paths and socket client.
-- **UI** (`ui/`): one Quickshell process for all windows. `shell.qml` keeps a window list and an `IpcHandler` named `gambito`; `gambito open` calls it through `quickshell ipc` and starts a process only when none is running. The process exits when the last window closes.
+- **UI** (`ui/`): a standalone Qt Quick host creates windows from `GambitoWindow.qml`; `gambito open` starts `gambito-qt` and passes an optional game id. The process exits when the last window closes.
 - **Window** (`GambitoWindow.qml`): socket, keys, command bar and help. Pages are `Loader`s, active only while shown: `LobbyView`, `BoardView`, `ProfileView`, `TvView`, `OpeningsView`, `PuzzlesView`, `ChallengesView`.
 - **Shared components:** `ActionButton`, `ThemedTextField`, `ThemedComboBox`, `GameRow`, `MiniBoard`, `TvBoard`, `ResultBar`, `ChatPanel`, `PlayScreen`.
 
-### Standalone Qt host
+### Qt host
 
-The `standalone/` directory contains the migration path to Qt Quick without
-QuickShell. It reuses the Rust daemon and Unix socket protocol and provides a
-small `QQmlApplicationEngine` host plus a Qt `QLocalSocket` bridge. Build it
-with:
+The `standalone/` directory contains the CMake host for the Qt Quick UI. It
+reuses the Rust daemon and Unix socket protocol and provides a small
+`QQmlApplicationEngine` host plus Qt `QLocalSocket` and file-watcher bridges.
+Build it with:
 
 ```sh
 cmake -S standalone -B target/qt-build -DCMAKE_BUILD_TYPE=Release
 cmake --build target/qt-build -j2
 ```
 
-The QuickShell launcher remains the default while window management, theme
-watching and multi-window IPC are migrated to the standalone host.
+The host supports multiple windows, live theme files and desktop installation.
 
 ## Memory
 
 Measured per process (anonymous memory): lobby ~52 MB, board ~72 MB, openings ~63 MB; the state broadcast is ~5 KB. What keeps it there:
 
-- **One process:** a single Quickshell process for all windows.
+- **One process:** a single Qt host for all windows.
 - **Loaded on demand:** pages load only while shown.
 - **Lighter drawing:** arrows drawn with `QtQuick.Shapes`; the software renderer is the default (about 30 MB less per window than GL).
 - **Small state:** move history stays out of the broadcast state.
@@ -56,7 +55,7 @@ cargo build                    # the Python tests use target/debug/gambito
 cargo test
 cargo clippy --all-targets -- -D warnings
 python3 tests/integration.py   # daemon against a fake Lichess server and fake Stockfish
-python3 tests/ui.py            # offscreen Quickshell with QtTest keyboard events
+python3 tests/ui.py            # offscreen Qt Quick with QtTest keyboard events
 python3 tests/engine-depth.py
 shellcheck tests/fake-stockfish.sh && shfmt -d tests/fake-stockfish.sh
 ```

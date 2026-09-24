@@ -164,7 +164,7 @@ int main(int argc, char **argv) {
     engine.rootContext()->setContextProperty(QStringLiteral("qtHost"), &host);
 
     const auto root = QCoreApplication::applicationDirPath() + QStringLiteral("/../share/gambito/qt-ui/GambitoWindow.qml");
-    const auto source = QFile::exists(root) ? root : QStringLiteral("standalone/ui/GambitoWindow.qml");
+    const auto source = QFile::exists(root) ? root : QFileInfo(QStringLiteral("ui/GambitoWindow.qml")).absoluteFilePath();
     QQmlComponent component(&engine, QUrl::fromLocalFile(QFileInfo(source).absoluteFilePath()));
     if (component.isError()) {
         for (const auto &error : component.errors()) qWarning().noquote() << error.toString();

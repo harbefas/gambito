@@ -1,8 +1,8 @@
 # Standalone Qt host
 
-This directory contains the first standalone Qt Quick host for Gambito. It keeps
-the Rust daemon and its Unix socket protocol unchanged while replacing the
-QuickShell window host with `QQmlApplicationEngine` and a small Qt socket bridge.
+This directory contains the standalone Qt Quick host for Gambito. It keeps the
+Rust daemon and its Unix socket protocol unchanged and uses `QQmlApplicationEngine`
+with small Qt socket and file-watcher bridges.
 
 Build and smoke-test it from the repository:
 
@@ -22,7 +22,5 @@ The installed `gambito-qt` entry uses the same Rust daemon service and can be
 launched from any desktop menu. Pass a game id as the first argument to open it
 directly, for example `gambito-qt abc12345`.
 
-The current host is intentionally parallel to the QuickShell launcher while the
-remaining host-specific features (multiple windows, live theme file watching and
-desktop integration) are moved across. The daemon, QML views and IPC messages
-remain shared during this transition.
+The daemon, QML views and IPC messages are shared across every window. The host
+supports multiple windows, live theme files and normal desktop installation.

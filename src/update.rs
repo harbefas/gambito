@@ -21,13 +21,14 @@ fn command_status(program: &str, args: &[&str]) -> Result<()> {
 
 fn install_tree(root: &Path, executable: &Path) -> Result<()> {
     let binary = root.join("gambito");
+    let qt_binary = root.join("gambito-qt");
     let ui = root.join("ui");
-    ensure!(binary.is_file() && ui.is_dir(), "Release archive is missing the binary or UI");
+    ensure!(binary.is_file() && qt_binary.is_file() && ui.is_dir(), "Release archive is missing the Gambito binaries or Qt UI");
     let install_dir = executable.parent().context("Installed binary has no parent directory")?;
     let target_ui = std::env::var_os("XDG_DATA_HOME")
         .map(PathBuf::from)
         .unwrap_or_else(|| PathBuf::from(std::env::var_os("HOME").unwrap()).join(".local/share"))
-        .join("gambito/ui");
+        .join("gambito/qt-ui");
     fs::create_dir_all(&target_ui)?;
     for entry in fs::read_dir(&ui)? {
         let entry = entry?;
@@ -39,6 +40,13 @@ fn install_tree(root: &Path, executable: &Path) -> Result<()> {
     permissions.set_mode(0o755);
     fs::set_permissions(&staged, permissions)?;
     fs::rename(staged, executable)?;
+    let qt_target = install_dir.join("gambito-qt");
+    let qt_staged = install_dir.join(".gambito-qt-update");
+    fs::copy(qt_binary, &qt_staged)?;
+    let mut qt_permissions = fs::metadata(&qt_staged)?.permissions();
+    qt_permissions.set_mode(0o755);
+    fs::set_permissions(&qt_staged, qt_permissions)?;
+    fs::rename(qt_staged, qt_target)?;
     Ok(())
 }
 

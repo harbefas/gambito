@@ -3,33 +3,36 @@
 ## Requirements
 
 - Rust 1.95 or newer
-- [Quickshell](https://quickshell.org) with Qt Quick Controls
+- Qt 6 with Qt Quick Controls and CMake
 - The DejaVu Sans font (pieces are font glyphs)
 - Optional: `stockfish` for local evaluation, `notify-send` for desktop notifications
 
 On Arch Linux and Omarchy:
 
 ```sh
-sudo pacman -S --needed rust quickshell stockfish ttf-dejavu libnotify
+sudo pacman -S --needed rust cmake qt6-base qt6-declarative stockfish ttf-dejavu libnotify
 ```
 
-Gambito runs anywhere Quickshell runs. It is developed and tested on Hyprland.
+Gambito runs as a normal Qt desktop application on Linux. It is developed and tested on Hyprland, but works with any desktop environment that supports Qt 6.
 
 ## Try it from the repository
 
 ```sh
 cargo build --release
+cmake -S standalone -B target/qt-build -DCMAKE_BUILD_TYPE=Release
+cmake --build target/qt-build -j2
+cmake --install target/qt-build --prefix "$HOME/.local"
 ./target/release/gambito open
 ```
 
-`open` and `local` start the daemon when it is not running, and `gambito daemon` runs it in the foreground. Closing a window leaves the daemon running. Without an installed UI, `gambito open` uses the `ui/` folder of the checkout.
+`open` and `local` start the daemon when it is not running, and `gambito daemon` runs it in the foreground. Closing a window leaves the daemon running. `gambito open` starts the standalone Qt host.
 
 ## Install for your user
 
 ```sh
 cargo build --release
 install -Dm755 target/release/gambito ~/.local/bin/gambito
-install -Dm644 -t ~/.local/share/gambito/ui ui/*.qml
+cmake --install target/qt-build --prefix "$HOME/.local"
 install -Dm644 packaging/gambito.service ~/.config/systemd/user/gambito.service
 install -Dm644 packaging/gambito.desktop ~/.local/share/applications/gambito.desktop
 install -Dm644 packaging/gambito.svg ~/.local/share/icons/hicolor/scalable/apps/gambito.svg
@@ -40,7 +43,7 @@ systemctl --user enable --now gambito.service
 After updating:
 
 - **Binary:** restart the service with `systemctl --user restart gambito`.
-- **UI:** copy `ui/*.qml` again, and delete any files that were removed from `ui/`. Quickshell loads the QML when it starts, so close every Gambito window before reopening.
+- **UI:** rebuild and reinstall the Qt host with CMake, then reopen Gambito.
 
 ## Published releases and updates
 
@@ -58,7 +61,7 @@ gambito update
 
 The updater validates the checksum, replaces the installed binary and UI, and restarts the user service if it was running. Local games, studies, tokens and themes stay in their existing XDG directories. Updates are explicit, so a running game is never interrupted without the user asking for it.
 
-For desktops that do not use QuickShell, build the standalone Qt host:
+For a source checkout, build the standalone Qt host:
 
 ```sh
 cmake -S standalone -B target/qt-build -DCMAKE_BUILD_TYPE=Release
@@ -71,9 +74,9 @@ daemon, data directories and Unix socket protocol.
 
 ## Open it
 
-The desktop entry puts Gambito in any app launcher: the Omarchy menu, Walker, fuzzel, rofi or your Quickshell launcher.
+The desktop entry puts Gambito in any app launcher: the Omarchy menu, Walker, fuzzel, rofi or your desktop's launcher.
 
-Each `gambito open` adds a window to the running Gambito process, which costs a few MB rather than a new Quickshell instance. Windows use the app ID (window class) `gambito`, matching the desktop entry, so docks and taskbars show the icon, and launch-or-focus scripts and window rules can match on it.
+Each `gambito open` starts a Qt window with the shared daemon state. Windows use the app ID (window class) `gambito`, matching the desktop entry, so docks and taskbars show the icon, and launch-or-focus scripts and window rules can match on it.
 
 **Omarchy.** Add a binding to `~/.config/hypr/bindings.lua`. `SUPER + ALT + C` is free in Omarchy's defaults, and this focuses Gambito when it is already open:
 

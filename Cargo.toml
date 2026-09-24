@@ -4,7 +4,7 @@ version = "0.1.0"
 edition = "2024"
 rust-version = "1.95"
 license = "GPL-3.0-or-later"
-description = "Keyboard-first Lichess client for tiling desktops: Rust daemon, Quickshell UI, Stockfish analysis"
+description = "Keyboard-first Lichess client for tiling desktops: Rust daemon, Qt Quick UI, Stockfish analysis"
 
 [dependencies]
 anyhow = "1"

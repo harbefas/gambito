@@ -16,7 +16,7 @@ Every action below has a key; [keyboard.md](keyboard.md) lists them all, and `?`
 
 The daemon owns games, clocks, Lichess streams and the engine. Windows are views: `w` opens another window on the current game, and windows of the same game share moves while keeping their own selection, orientation and focus. `q` closes a window; the daemon and your games keep running.
 
-A single Quickshell process hosts every window. Views (lobby, board, profile, TV, openings, puzzles) load only while shown, which keeps the lobby at about 50 MB and a board at about 70 MB.
+A single Qt Quick process hosts every window. Views (lobby, board, profile, TV, openings, puzzles) load only while shown, which keeps the lobby compact and a board responsive in tiled panes.
 
 ## Lobby
 

@@ -24,8 +24,8 @@ body:
   - type: input
     id: system
     attributes:
-      label: Distro, compositor and Quickshell version
-      placeholder: Arch · Hyprland 0.56 · quickshell 0.3.1
+      label: Distro, compositor and Qt version
+      placeholder: Arch · Hyprland 0.56 · Qt 6.11
     validations:
       required: true
   - type: textarea
@@ -38,6 +38,6 @@ body:
     id: reopened
     attributes:
       label: After updating the UI
-      description: Quickshell loads its QML at startup.
+      description: Gambito loads its QML at startup.
       options:
         - label: I closed every Gambito window and reopened it

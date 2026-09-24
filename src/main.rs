@@ -232,49 +232,15 @@ async fn main() -> Result<()> {
             if let Some(id) = &game {
                 request(json!({"cmd":"open", "game":id})).await?;
             }
-            let ui = std::env::var_os("GAMBITO_UI")
-                .map(PathBuf::from)
-                .unwrap_or_else(|| {
-                    let installed = data_dir().join("ui");
-                    if installed.exists() {
-                        installed
-                    } else {
-                        PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("ui")
-                    }
-                });
-            // Reuse a running UI process: another window costs a few MB instead of a new
-            // ~250 MB Quickshell instance. Exit status is non-zero when none is running.
-            let mut ipc = std::process::Command::new("quickshell");
-            ipc.args(["ipc", "--path"])
-                .arg(&ui)
-                .args(["call", "gambito"]);
-            match &game {
-                Some(id) => ipc.args(["open", id]),
-                None => ipc.arg("lobby"),
-            };
-            let reused = ipc
-                .stdout(std::process::Stdio::null())
-                .stderr(std::process::Stdio::null())
-                .status()
-                .is_ok_and(|status| status.success());
-            if reused {
-                println!("Window opened in the running UI");
-                return Ok(());
-            }
-            let mut command = std::process::Command::new("quickshell");
-            // CPU rendering saves ~30 MB per UI process (no GL context); a mostly static
-            // board does not need the GPU. Set QT_QUICK_BACKEND to override.
+            let mut command = std::process::Command::new("gambito-qt");
             if std::env::var_os("QT_QUICK_BACKEND").is_none() {
                 command.env("QT_QUICK_BACKEND", "software");
             }
             let child = command
-                .arg("--daemonize")
-                .arg("--path")
-                .arg(ui)
                 .env("GAMBITO_SOCKET", socket_path()?)
-                .env("GAMBITO_GAME", game.unwrap_or_default())
+                .arg(game.unwrap_or_default())
                 .spawn()
-                .context("Could not start Quickshell")?;
+                .context("Could not start gambito-qt")?;
             println!("Window started (PID {})", child.id());
             return Ok(());
         }

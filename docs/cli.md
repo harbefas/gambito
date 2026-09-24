@@ -62,7 +62,7 @@ The daemon never executes shell commands from the protocol.
 | Variable | Effect |
 |---|---|
 | `GAMBITO_SOCKET` | Use another socket path (its directory must be mode 0700) |
-| `GAMBITO_UI` | QML directory for `gambito open` (default `~/.local/share/gambito/ui`, then the checkout's `ui/`) |
+| `GAMBITO_GAME` | Initial game id for the Qt host |
 | `GAMBITO_STOCKFISH` | Engine executable (default `stockfish` on `PATH`) |
 | `QT_QUICK_BACKEND` | `gambito open` defaults to `software`, which saves about 30 MB per window; set it to override |
 | `GAMBITO_API_URL` | Loopback-only Lichess API for tests |

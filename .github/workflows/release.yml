@@ -15,15 +15,21 @@ jobs:
       ASSET: gambito-linux-x86_64.tar.gz
     steps:
       - uses: actions/checkout@v4
+      - name: Install Qt
+        run: sudo apt-get update && sudo apt-get install -y cmake qt6-base-dev qt6-declarative-dev qt6-tools-dev
       - uses: dtolnay/rust-toolchain@stable
         with:
           targets: ${{ env.TARGET }}
       - name: Build
-        run: cargo build --release --target ${{ env.TARGET }}
+        run: |
+          cargo build --release --target ${{ env.TARGET }}
+          cmake -S standalone -B target/qt-build -DCMAKE_BUILD_TYPE=Release
+          cmake --build target/qt-build --parallel 2
       - name: Package
         run: |
           mkdir -p package/ui
           cp target/${{ env.TARGET }}/release/gambito package/gambito
+          cp target/qt-build/gambito-qt package/gambito-qt
           cp ui/*.qml package/ui/
           tar -czf ${{ env.ASSET }} -C package .
           sha256sum ${{ env.ASSET }} > ${{ env.ASSET }}.sha256

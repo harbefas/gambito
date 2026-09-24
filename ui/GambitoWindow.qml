@@ -1,11 +1,9 @@
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
-import Quickshell
-import Quickshell.Io
 
 // One Gambito window with its own daemon connection and view state.
-// shell.qml hosts any number of these in a single Quickshell process.
+// The Qt host can create any number of these windows in one process.
 Scope {
     id: root
     property string initialGame: ""
@@ -149,8 +147,8 @@ Scope {
     // (background, foreground, accent, muted, red, green, ...), so any setup can write one:
     // 1. $XDG_CONFIG_HOME/gambito/colors.toml  2. Omarchy 4's current theme  3. Omarchy 3's current theme
     // 4. ~/.config/desktop/theme-<mode>.toml, mode from ~/.local/state/desktop/theme  5. built-in palette.
-    readonly property string configHome: Quickshell.env("XDG_CONFIG_HOME") || Quickshell.env("HOME") + "/.config"
-    readonly property string stateHome: Quickshell.env("XDG_STATE_HOME") || Quickshell.env("HOME") + "/.local/state"
+    readonly property string configHome: qtHost.env("XDG_CONFIG_HOME") || qtHost.env("HOME") + "/.config"
+    readonly property string stateHome: qtHost.env("XDG_STATE_HOME") || qtHost.env("HOME") + "/.local/state"
     property string themeMode: "dark"
     property var themeSources: [({}), ({}), ({}), ({})]
     readonly property var theme: themeSources.find(t => !!t.background) || ({})
@@ -548,8 +546,7 @@ Scope {
 
     Socket {
         id: socket
-        path: Quickshell.env("GAMBITO_SOCKET") || (Quickshell.env("XDG_RUNTIME_DIR") + "/gambito/socket")
-        connected: true
+        path: qtHost.env("GAMBITO_SOCKET") || (qtHost.env("XDG_RUNTIME_DIR") + "/gambito/socket")
         parser: SplitParser { onRead: data => root.receive(data) }
         onConnectionStateChanged: { if (connected) root.tell("", false); }
     }

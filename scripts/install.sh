@@ -27,8 +27,9 @@ curl --fail --silent --show-error --location "${checksum_url}" -o "${tmp}/${asse
 tar -xzf "${tmp}/${asset}" -C "${tmp}"
 
 install -Dm755 "${tmp}/gambito" "${HOME}/.local/bin/gambito"
-install -d "${HOME}/.local/share/gambito/ui"
-install -Dm644 "${tmp}/ui/"*.qml -t "${HOME}/.local/share/gambito/ui"
+install -Dm755 "${tmp}/gambito-qt" "${HOME}/.local/bin/gambito-qt"
+install -d "${HOME}/.local/share/gambito/qt-ui"
+install -Dm644 "${tmp}/ui/"*.qml -t "${HOME}/.local/share/gambito/qt-ui"
 if [[ -f packaging/gambito.service ]]; then
   install -Dm644 packaging/gambito.service "${HOME}/.config/systemd/user/gambito.service"
   systemctl --user daemon-reload
