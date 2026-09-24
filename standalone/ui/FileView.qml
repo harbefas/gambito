@@ -1,12 +1,23 @@
 import QtQuick
+import Gambito.Host
 
-QtObject {
+Item {
+    id: view
     property string path: ""
     property bool watchChanges: false
     property bool printErrors: false
-    property string text: ""
+    readonly property string contents: bridge.text
     signal loaded()
     signal loadFailed()
     signal fileChanged()
-    function reload() { loadFailed(); }
+    GambitoFile {
+        id: bridge
+        path: view.path
+        watchChanges: view.watchChanges
+        onLoaded: view.loaded()
+        onLoadFailed: view.loadFailed()
+        onFileChanged: view.fileChanged()
+    }
+    function text() { return bridge.text; }
+    function reload() { bridge.load(); }
 }
